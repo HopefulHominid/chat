@@ -14,17 +14,11 @@
     html,
     body {
         @include size;
-        @include center;
     }
 
     body {
         background-color: skyblue;
 
         font-family: sans-serif;
-
-        display: flex;
-        flex-direction: column;
-        justify-content: center;
-        align-items: center;
     }
 }
