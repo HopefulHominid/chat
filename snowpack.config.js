@@ -1,7 +1,8 @@
-/** @type {import("snowpack").SnowpackUserConfig } */
 module.exports = {
     mount: {
-        /* ... */
+        public: { url: '/', static: true },
+        // NOTE: could be '/build'... doesn't work w/ netlify default
+        src: '/dist'
     },
     plugins: ['@snowpack/plugin-svelte'],
     routes: [

@@ -1,0 +1,30 @@
+@use './mixins.scss' as *;
+
+:global {
+    * {
+        padding: 0;
+        margin: 0;
+        border: none;
+
+        box-sizing: border-box;
+
+        -webkit-tap-highlight-color: transparent;
+    }
+
+    html,
+    body {
+        @include size;
+        @include center;
+    }
+
+    body {
+        background-color: skyblue;
+
+        font-family: sans-serif;
+
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+    }
+}
