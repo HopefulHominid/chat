@@ -1,8 +1,6 @@
 {
     "scripts": {
-        "dev": "snowpack dev",
-        "build": "snowpack build",
-        "test": "echo \"This template does not include a test runner by default.\" && exit 1"
+        "dev": "snowpack build && node build/server.js"
     },
     "devDependencies": {
         "@snowpack/plugin-svelte": "3.5.2",
@@ -12,6 +10,9 @@
         "snowpack": "^3.0.1"
     },
     "dependencies": {
+        "express": "^4.17.1",
+        "socket.io": "^3.1.1",
+        "socket.io-client": "^3.1.1",
         "svelte": "3.32.1"
     }
 }
