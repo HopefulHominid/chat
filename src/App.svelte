@@ -33,6 +33,10 @@
         if (key === 'Enter') sendMessage()
     }
 
+    const nicknameKeydown = ({ key }) => {
+        if (key === 'Enter') updateNickname()
+    }
+
     const add_to_list = str => {
         const item = document.createElement('li')
         item.textContent = str
@@ -51,7 +55,7 @@
     <ul bind:this={messages} />
     <input autocomplete="off" bind:value={message} on:keydown={messageKeydown} />
     <button on:click={sendMessage}>Send Message</button>
-    <input autocomplete="off" bind:value={nickname} />
+    <input autocomplete="off" bind:value={nickname} on:keydown={nicknameKeydown}/>
     <button on:click={updateNickname}>Update Nickname</button>
 </main>
 
