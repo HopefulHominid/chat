@@ -38,7 +38,7 @@
     const typingStart = () => {
         if (!typing) {
             typing = true
-            socket.emit('chat message', `${nickname} is typing...`)
+            socket.emit('typing start', `${nickname} is typing...`)
             hook = setTimeout(typingStop, delay)
         } else {
             clearTimeout(hook)
@@ -47,7 +47,7 @@
     }
 
     const typingStop = () => {
-        socket.emit('chat message', `${nickname} is no longer typing.`)
+        socket.emit('typing stop', `${nickname} is no longer typing.`)
         typing = false
     }
 

@@ -22,13 +22,13 @@ io.on('connection', socket => {
         socket.broadcast.emit('chat message', `${sockets[socket.id]}: ${message}`)
     })
 
-    // socket.on('typing start', message => {
-    //     socket.broadcast.emit('typing start', `${sockets[socket.id]}: ${message}`)
-    // })
+    socket.on('typing start', message => {
+        socket.broadcast.emit('chat message', message)
+    })
 
-    // socket.on('typing stop', message => {
-    //     socket.broadcast.emit('typing stop', `${sockets[socket.id]}: ${message}`)
-    // })
+    socket.on('typing stop', message => {
+        socket.broadcast.emit('chat message', message)
+    })
 
     socket.on('update nickname', nickname => {
         socket.broadcast.emit(
@@ -41,6 +41,7 @@ io.on('connection', socket => {
     socket.on('disconnect', _reason => {
         // NOTE: disconnect is reserved
         // NOTE: is there a diff btw `socket.broadcast` and `io` here ?
+        //       if we're disconnecting... idk man.
         socket.broadcast.emit('disconnection', `${sockets[socket.id]} left`)
         delete sockets[socket.id]
     })
