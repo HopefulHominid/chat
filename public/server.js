@@ -22,6 +22,14 @@ io.on('connection', socket => {
         socket.broadcast.emit('chat message', `${sockets[socket.id]}: ${message}`)
     })
 
+    // socket.on('typing start', message => {
+    //     socket.broadcast.emit('typing start', `${sockets[socket.id]}: ${message}`)
+    // })
+
+    // socket.on('typing stop', message => {
+    //     socket.broadcast.emit('typing stop', `${sockets[socket.id]}: ${message}`)
+    // })
+
     socket.on('update nickname', nickname => {
         socket.broadcast.emit(
             'update nickname',

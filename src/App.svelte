@@ -31,8 +31,28 @@
         }
     }
 
+    let typing = false
+    let delay = 2000
+    let hook
+
+    const typingStart = () => {
+        if (!typing) {
+            typing = true
+            socket.emit('chat message', `${nickname} is typing...`)
+            hook = setTimeout(typingStop, delay)
+        } else {
+            clearTimeout(hook)
+            hook = setTimeout(typingStop, delay)
+        }
+    }
+
+    const typingStop = () => {
+        socket.emit('chat message', `${nickname} is no longer typing.`)
+        typing = false
+    }
+
     const messageKeydown = ({ key }) => {
-        if (key === 'Enter') sendMessage()
+        key === 'Enter' ? sendMessage() : typingStart()
     }
 
     const nicknameKeydown = ({ key }) => {
@@ -47,7 +67,7 @@
     }
 
     socket.emit('connection', nickname)
-    
+
     onMount(() => add_to_list('you joined'))
 
     socket.on('chat message', add_to_list)
@@ -80,6 +100,6 @@
     main {
         @include size;
 
-        text-align: center;
+        // text-align: center;
     }
 </style>
