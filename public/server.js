@@ -17,5 +17,5 @@ io.on('connection', socket => {
 })
 
 http.listen(8080, () => {
-    console.log('listening on *:8080')
+    console.log('listening on localhost:8080')
 })
