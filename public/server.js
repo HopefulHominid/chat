@@ -15,11 +15,14 @@ const sockets = {}
 io.on('connection', socket => {
     socket.on('connection', nickname => {
         sockets[socket.id] = nickname
-        socket.broadcast.emit('connection', `${nickname} joined`)
+        io.emit('connection', sockets)
     })
 
     socket.on('chat message', message => {
-        socket.broadcast.emit('chat message', `${sockets[socket.id]}: ${message}`)
+        socket.broadcast.emit(
+            'chat message',
+            `${sockets[socket.id]}: ${message}`
+        )
     })
 
     socket.on('typing start', message => {
@@ -31,19 +34,16 @@ io.on('connection', socket => {
     })
 
     socket.on('update nickname', nickname => {
-        socket.broadcast.emit(
-            'update nickname',
-            `${sockets[socket.id]} changed their name to ${nickname}`
-        )
         sockets[socket.id] = nickname
+        io.emit('update nickname', sockets)
     })
 
     socket.on('disconnect', _reason => {
         // NOTE: disconnect is reserved
         // NOTE: is there a diff btw `socket.broadcast` and `io` here ?
         //       if we're disconnecting... idk man.
-        socket.broadcast.emit('disconnection', `${sockets[socket.id]} left`)
         delete sockets[socket.id]
+        socket.broadcast.emit('disconnection', sockets)
     })
 })
 

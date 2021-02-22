@@ -1,7 +1,6 @@
 <script>
     import { io } from 'socket.io-client'
-    import { onMount } from 'svelte'
-
+    
     const socket = io()
 
     // <input /> value binding
@@ -12,13 +11,10 @@
 
     let officialNickname = nickname
 
-    // <ul> element binding
-    let messages
-
     const sendMessage = () => {
         if (message) {
             socket.emit('chat message', message)
-            add_to_list(`${officialNickname}: ${message}`)
+            add_to_messages(`${officialNickname}: ${message}`)
             message = ''
         }
     }
@@ -26,7 +22,6 @@
     const updateNickname = () => {
         if (nickname) {
             socket.emit('update nickname', nickname)
-            add_to_list(`you changed your name to ${nickname}`)
             officialNickname = nickname
         }
     }
@@ -59,26 +54,33 @@
         if (key === 'Enter') updateNickname()
     }
 
-    const add_to_list = str => {
-        const item = document.createElement('li')
-        item.textContent = str
-        messages.appendChild(item)
-        window.scrollTo(0, document.body.scrollHeight)
-    }
+    let messages = []
+
+    let online = []
+
+    // WARN: keeping this just in case. superstitious
+    // window.scrollTo(0, document.body.scrollHeight)
+    const add_to_messages = str => (messages = [...messages, str])
+
+    const update_online_list = sockets => (online = Object.values(sockets))
 
     socket.emit('connection', nickname)
 
-    onMount(() => add_to_list('you joined'))
+    // socket.on('update online')
 
-    socket.on('chat message', add_to_list)
-    socket.on('update nickname', add_to_list)
-    socket.on('connection', add_to_list)
+    socket.on('chat message', add_to_messages)
+    socket.on('update nickname', update_online_list)
+    socket.on('connection', update_online_list)
     // NOTE: disconnect is reserved
-    socket.on('disconnection', add_to_list)
+    socket.on('disconnection', update_online_list)
 </script>
 
 <main>
-    <ul bind:this={messages} />
+    <ul>
+        {#each messages as message}
+            <li>{message}</li>
+        {/each}
+    </ul>
     <input
         autocomplete="off"
         bind:value={message}
@@ -91,6 +93,11 @@
         on:keydown={nicknameKeydown}
     />
     <button on:click={updateNickname}>Update Nickname</button>
+    <ul>
+        {#each online as name}
+            <li>{name}</li>
+        {/each}
+    </ul>
 </main>
 
 <style lang="scss">
