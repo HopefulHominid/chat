@@ -1,5 +1,6 @@
 <script>
     import { io } from 'socket.io-client'
+    import { onMount } from 'svelte'
 
     const socket = io()
 
@@ -9,9 +10,7 @@
     // <input /> value binding
     let nickname = 'anonymous'
 
-    // TODO: need some way to emit to other && not myself, so it
-    //       can say 'you joined'
-    socket.emit('connection', nickname)
+    let officialNickname = nickname
 
     // <ul> element binding
     let messages
@@ -19,6 +18,7 @@
     const sendMessage = () => {
         if (message) {
             socket.emit('chat message', message)
+            add_to_list(`${officialNickname}: ${message}`)
             message = ''
         }
     }
@@ -26,6 +26,8 @@
     const updateNickname = () => {
         if (nickname) {
             socket.emit('update nickname', nickname)
+            add_to_list(`you changed your name to ${nickname}`)
+            officialNickname = nickname
         }
     }
 
@@ -44,6 +46,10 @@
         window.scrollTo(0, document.body.scrollHeight)
     }
 
+    socket.emit('connection', nickname)
+    
+    onMount(() => add_to_list('you joined'))
+
     socket.on('chat message', add_to_list)
     socket.on('update nickname', add_to_list)
     socket.on('connection', add_to_list)
@@ -53,9 +59,17 @@
 
 <main>
     <ul bind:this={messages} />
-    <input autocomplete="off" bind:value={message} on:keydown={messageKeydown} />
+    <input
+        autocomplete="off"
+        bind:value={message}
+        on:keydown={messageKeydown}
+    />
     <button on:click={sendMessage}>Send Message</button>
-    <input autocomplete="off" bind:value={nickname} on:keydown={nicknameKeydown}/>
+    <input
+        autocomplete="off"
+        bind:value={nickname}
+        on:keydown={nicknameKeydown}
+    />
     <button on:click={updateNickname}>Update Nickname</button>
 </main>
 
