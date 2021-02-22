@@ -10,13 +10,26 @@ app.get('*', (req, res) => {
     res.sendFile(__dirname + '/index.html')
 })
 
+const sockets = {}
+
 io.on('connection', socket => {
-    io.emit('connection', 'someone connected')
-    socket.on('chat message', msg => {
-        io.emit('chat message', msg)
+    socket.on('connection', nickname => {
+        sockets[socket.id] = nickname
+        io.emit('connection', `${nickname} joined`)
     })
-    socket.on('disconnect', () => {
-        io.emit('disconnection', 'someone left')
+
+    socket.on('chat message', message => {
+        io.emit('chat message', `${sockets[socket.id]}: ${message}`)
+    })
+
+    socket.on('update nickname', nickname => {
+        sockets[socket.id] = nickname
+    })
+
+    socket.on('disconnect', _reason => {
+        // NOTE: disconnect is reserved
+        io.emit('disconnection', `${sockets[socket.id]} left`)
+        delete sockets[socket.id]
     })
 })
 

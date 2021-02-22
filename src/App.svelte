@@ -3,14 +3,29 @@
 
     const socket = io()
 
-    let message = 'your message'
+    // <input /> value binding
+    let message = 'your message here'
 
+    // <input /> value binding
+    let nickname = 'anonymous'
+
+    // TODO: need some way to emit to other && not myself, so it
+    //       can say 'you joined'
+    socket.emit('connection', nickname)
+
+    // <ul> element binding
     let messages
 
-    const submit = () => {
+    const sendMessage = () => {
         if (message) {
             socket.emit('chat message', message)
             message = ''
+        }
+    }
+
+    const updateNickname = () => {
+        if (nickname) {
+            socket.emit('update nickname', nickname)
         }
     }
 
@@ -23,16 +38,16 @@
 
     socket.on('chat message', add_to_list)
     socket.on('connection', add_to_list)
+    // NOTE: disconnect is reserved
     socket.on('disconnection', add_to_list)
 </script>
 
 <main>
-    <ul id="messages" bind:this={messages} />
-    <form id="form" action="" on:submit|preventDefault={submit}>
-        <input id="input" autocomplete="off" bind:value={message} /><button
-            >Send</button
-        >
-    </form>
+    <ul bind:this={messages} />
+    <input autocomplete="off" bind:value={message} />
+    <button on:click={sendMessage}>Send Message</button>
+    <input autocomplete="off" bind:value={nickname} />
+    <button on:click={updateNickname}>Update Nickname</button>
 </main>
 
 <style lang="scss">
