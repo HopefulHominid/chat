@@ -14,12 +14,16 @@
         }
     }
 
-    socket.on('chat message', msg => {
+    const add_to_list = str => {
         const item = document.createElement('li')
-        item.textContent = msg
+        item.textContent = str
         messages.appendChild(item)
         window.scrollTo(0, document.body.scrollHeight)
-    })
+    }
+
+    socket.on('chat message', add_to_list)
+    socket.on('connection', add_to_list)
+    socket.on('disconnection', add_to_list)
 </script>
 
 <main>

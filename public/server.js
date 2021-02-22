@@ -11,8 +11,12 @@ app.get('*', (req, res) => {
 })
 
 io.on('connection', socket => {
+    io.emit('connection', 'someone connected')
     socket.on('chat message', msg => {
         io.emit('chat message', msg)
+    })
+    socket.on('disconnect', () => {
+        io.emit('disconnection', 'someone left')
     })
 })
 
