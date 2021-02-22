@@ -41,6 +41,7 @@
     }
 
     socket.on('chat message', add_to_list)
+    socket.on('update nickname', add_to_list)
     socket.on('connection', add_to_list)
     // NOTE: disconnect is reserved
     socket.on('disconnection', add_to_list)

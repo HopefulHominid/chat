@@ -23,6 +23,10 @@ io.on('connection', socket => {
     })
 
     socket.on('update nickname', nickname => {
+        io.emit(
+            'update nickname',
+            `${sockets[socket.id]} changed their name to ${nickname}`
+        )
         sockets[socket.id] = nickname
     })
 
