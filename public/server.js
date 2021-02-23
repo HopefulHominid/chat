@@ -15,7 +15,7 @@ const sockets = {}
 io.on('connection', socket => {
     socket.on('connection', nickname => {
         sockets[socket.id] = nickname
-        io.emit('connection', sockets)
+        io.emit('sockets', sockets)
     })
 
     socket.on('chat message', message => {
@@ -35,7 +35,7 @@ io.on('connection', socket => {
 
     socket.on('update nickname', nickname => {
         sockets[socket.id] = nickname
-        io.emit('update nickname', sockets)
+        io.emit('sockets', sockets)
     })
 
     socket.on('disconnect', _reason => {
@@ -43,7 +43,7 @@ io.on('connection', socket => {
         // NOTE: is there a diff btw `socket.broadcast` and `io` here ?
         //       if we're disconnecting... idk man.
         delete sockets[socket.id]
-        socket.broadcast.emit('disconnection', sockets)
+        socket.broadcast.emit('sockets', sockets)
     })
 })
 

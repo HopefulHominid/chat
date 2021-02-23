@@ -1,7 +1,9 @@
 <script>
     import { io } from 'socket.io-client'
-    
+
     const socket = io()
+
+    let sockets = {}
 
     // <input /> value binding
     let message = 'your message here'
@@ -56,23 +58,14 @@
 
     let messages = []
 
-    let online = []
-
     // WARN: keeping this just in case. superstitious
     // window.scrollTo(0, document.body.scrollHeight)
     const add_to_messages = str => (messages = [...messages, str])
 
-    const update_online_list = sockets => (online = Object.values(sockets))
-
     socket.emit('connection', nickname)
 
-    // socket.on('update online')
-
     socket.on('chat message', add_to_messages)
-    socket.on('update nickname', update_online_list)
-    socket.on('connection', update_online_list)
-    // NOTE: disconnect is reserved
-    socket.on('disconnection', update_online_list)
+    socket.on('sockets', value => sockets = value)
 </script>
 
 <main>
@@ -94,7 +87,7 @@
     />
     <button on:click={updateNickname}>Update Nickname</button>
     <ul>
-        {#each online as name}
+        {#each Object.values(sockets) as name}
             <li>{name}</li>
         {/each}
     </ul>
