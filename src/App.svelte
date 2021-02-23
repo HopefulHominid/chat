@@ -52,7 +52,7 @@
     }
 
     const messageKeydown = ({ key }) => {
-        key === 'Enter' ? sendMessage() : typingStart()
+        if (key === 'Enter') sendMessage()
     }
 
     const nicknameKeydown = ({ key }) => {
@@ -81,6 +81,7 @@
         autocomplete="off"
         bind:value={message}
         on:keydown={messageKeydown}
+        on:input={typingStart}
     />
     <button on:click={sendMessage}>Send Message</button>
     <input
