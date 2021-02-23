@@ -13,10 +13,13 @@
 
     let officialNickname = nickname
 
+    socket.emit('connection', nickname)
+
     const sendMessage = () => {
         if (message) {
             socket.emit('chat message', message)
             add_to_messages(`${officialNickname}: ${message}`)
+            typingStop()
             message = ''
         }
     }
@@ -35,7 +38,7 @@
     const typingStart = () => {
         if (!typing) {
             typing = true
-            socket.emit('typing start', `${nickname} is typing...`)
+            socket.emit('typing start')
             hook = setTimeout(typingStop, delay)
         } else {
             clearTimeout(hook)
@@ -44,7 +47,7 @@
     }
 
     const typingStop = () => {
-        socket.emit('typing stop', `${nickname} is no longer typing.`)
+        socket.emit('typing stop')
         typing = false
     }
 
@@ -62,10 +65,10 @@
     // window.scrollTo(0, document.body.scrollHeight)
     const add_to_messages = str => (messages = [...messages, str])
 
-    socket.emit('connection', nickname)
-
     socket.on('chat message', add_to_messages)
-    socket.on('sockets', value => sockets = value)
+    socket.on('sockets', value => (sockets = value))
+    socket.on('typing start', id => (sockets[id].typing = true))
+    socket.on('typing stop', id => (sockets[id].typing = false))
 </script>
 
 <main>
@@ -87,8 +90,8 @@
     />
     <button on:click={updateNickname}>Update Nickname</button>
     <ul>
-        {#each Object.values(sockets) as name}
-            <li>{name}</li>
+        {#each Object.values(sockets) as { name, typing }}
+            <li>{name} {typing ? '⌨️ typing...' : ''}</li>
         {/each}
     </ul>
 </main>
@@ -96,6 +99,12 @@
 <style lang="scss">
     @use './style/global.scss';
     @use './style/mixins.scss' as *;
+
+    main,
+    input,
+    button {
+        font-size: 30px;
+    }
 
     main {
         @include size;

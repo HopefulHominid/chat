@@ -14,27 +14,30 @@ const sockets = {}
 
 io.on('connection', socket => {
     socket.on('connection', nickname => {
-        sockets[socket.id] = nickname
+        sockets[socket.id] = {
+            name: nickname,
+            typing: false
+        }
         io.emit('sockets', sockets)
     })
 
     socket.on('chat message', message => {
         socket.broadcast.emit(
             'chat message',
-            `${sockets[socket.id]}: ${message}`
+            `${sockets[socket.id].name}: ${message}`
         )
     })
 
-    socket.on('typing start', message => {
-        socket.broadcast.emit('chat message', message)
+    socket.on('typing start', () => {
+        io.emit('typing start', socket.id)
     })
 
-    socket.on('typing stop', message => {
-        socket.broadcast.emit('chat message', message)
+    socket.on('typing stop', () => {
+        io.emit('typing stop', socket.id)
     })
 
     socket.on('update nickname', nickname => {
-        sockets[socket.id] = nickname
+        sockets[socket.id].name = nickname
         io.emit('sockets', sockets)
     })
 
