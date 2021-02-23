@@ -1,6 +1,7 @@
 {
     "scripts": {
-        "dev": "snowpack build && node build/server.js"
+        "dev": "snowpack build && node build/server.js",
+        "start": "snowpack build && node build/server.js"
     },
     "devDependencies": {
         "@snowpack/plugin-svelte": "3.5.2",
