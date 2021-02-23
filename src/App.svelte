@@ -5,6 +5,8 @@
 
     let sockets = {}
 
+    let socketId
+
     // <input /> value binding
     let message = 'your message here'
 
@@ -65,6 +67,7 @@
     // window.scrollTo(0, document.body.scrollHeight)
     const add_to_messages = str => (messages = [...messages, str])
 
+    socket.on('init', id => socketId = id)
     socket.on('chat message', add_to_messages)
     socket.on('sockets', value => (sockets = value))
     socket.on('typing start', id => (sockets[id].typing = true))
@@ -91,8 +94,12 @@
     />
     <button on:click={updateNickname}>Update Nickname</button>
     <ul>
-        {#each Object.values(sockets) as { name, typing }}
-            <li>{name} {typing ? '⌨️ typing...' : ''}</li>
+        {#each Object.entries(sockets) as [id, { name, typing }]}
+            <li>
+                {name}
+                {id === socketId ? '(you)' : ''}
+                {typing ? '⌨️ typing...' : ''}
+            </li>
         {/each}
     </ul>
 </main>

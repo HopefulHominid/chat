@@ -13,6 +13,8 @@ app.get('*', (req, res) => {
 const sockets = {}
 
 io.on('connection', socket => {
+    socket.emit('init', socket.id)
+    
     socket.on('connection', nickname => {
         sockets[socket.id] = {
             name: nickname,
