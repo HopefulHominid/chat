@@ -1,4 +1,7 @@
 {
+    "engines": {
+        "node": "15.x"
+    },
     "scripts": {
         "dev": "snowpack build && node build/server.js",
         "start": "snowpack build && node build/server.js"
