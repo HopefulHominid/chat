@@ -5,8 +5,6 @@
 
     let sockets = {}
 
-    let socketId
-
     // <input /> value binding
     let message = 'your message here'
 
@@ -51,6 +49,7 @@
     const typingStop = () => {
         socket.emit('typing stop')
         typing = false
+        clearTimeout(hook)
     }
 
     const messageKeydown = ({ key }) => {
@@ -67,7 +66,6 @@
     // window.scrollTo(0, document.body.scrollHeight)
     const add_to_messages = str => (messages = [...messages, str])
 
-    socket.on('init', id => socketId = id)
     socket.on('chat message', add_to_messages)
     socket.on('sockets', value => (sockets = value))
     socket.on('typing start', id => (sockets[id].typing = true))
@@ -97,7 +95,7 @@
         {#each Object.entries(sockets) as [id, { name, typing }]}
             <li>
                 {name}
-                {id === socketId ? '(you)' : ''}
+                {id === socket.id ? '(you)' : ''}
                 {typing ? '⌨️ typing...' : ''}
             </li>
         {/each}
