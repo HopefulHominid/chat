@@ -7,10 +7,10 @@
         "@snowpack/plugin-svelte": "3.5.2",
         "autoprefixer": "^10.2.4",
         "postcss": "^8.2.5",
-        "sass": "^1.32.7",
-        "snowpack": "^3.0.1"
+        "sass": "^1.32.7"
     },
     "dependencies": {
+        "snowpack": "^3.0.1",
         "express": "^4.17.1",
         "socket.io": "^3.1.1",
         "socket.io-client": "^3.1.1",
