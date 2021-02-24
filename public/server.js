@@ -13,19 +13,27 @@ app.get('*', (req, res) => {
 const sockets = {}
 
 io.on('connection', socket => {
-    socket.on('connection', nickname => {
-        sockets[socket.id] = {
-            name: nickname,
-            typing: false
-        }
-        io.emit('sockets', sockets)
-    })
+    sockets[socket.id] = {
+        name: 'anonymous',
+        typing: false,
+        visible: true
+    }
+
+    io.emit('sockets', sockets)
 
     socket.on('chat message', message => {
         socket.broadcast.emit(
             'chat message',
             `${sockets[socket.id]?.name}: ${message}`
         )
+    })
+
+    socket.on('visibility', visible => {
+        sockets[socket.id].visible = visible
+        socket.broadcast.emit('visibility', {
+            visible,
+            id: socket.id
+        })
     })
 
     socket.on('typing start', () => {
@@ -38,7 +46,10 @@ io.on('connection', socket => {
 
     socket.on('update nickname', nickname => {
         sockets[socket.id].name = nickname
-        io.emit('sockets', sockets)
+        socket.broadcast.emit('update nickname', {
+            id: socket.id,
+            name: nickname
+        })
     })
 
     socket.on('disconnect', _reason => {

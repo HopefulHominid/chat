@@ -13,13 +13,21 @@
 
     let officialNickname = nickname
 
-    socket.emit('connection', nickname)
-
     let visible
 
     $: if (visible) unread = false
 
-    const updateVisible = () => visible = document.visibilityState === 'visible'
+    const updateVisible = () => {
+        visible = document.visibilityState === 'visible'
+        socket.emit('visibility', visible)
+        // WARN: our default of visible: true might be hiding the fact
+        //       that we miss the first value from an update here
+        if (sockets[socket.id]) sockets[socket.id].visible = visible
+    }
+
+    socket.on('visibility', ({ id, visible }) => {
+        sockets[id].visible = visible
+    })
 
     updateVisible()
 
@@ -37,7 +45,7 @@
     const updateNickname = () => {
         if (nickname) {
             socket.emit('update nickname', nickname)
-            officialNickname = nickname
+            sockets[socket.id].name = nickname
         }
     }
 
@@ -86,12 +94,13 @@
         add_to_messages(msg)
     })
     socket.on('sockets', value => (sockets = value))
+    socket.on('update nickname', ({ id, name }) => (sockets[id].name = name))
     socket.on('typing start', id => (sockets[id].typing = true))
     socket.on('typing stop', id => (sockets[id].typing = false))
 </script>
 
 <svelte:head>
-	<link rel="icon" href="/{faviconType}.ico" />
+    <link rel="icon" href="/{faviconType}.ico" />
 </svelte:head>
 
 <main>
@@ -114,8 +123,9 @@
     />
     <button on:click={updateNickname}>Update Nickname</button>
     <ul>
-        {#each Object.entries(sockets) as [id, { name, typing }]}
+        {#each Object.entries(sockets) as [id, { name, typing, visible }]}
             <li>
+                {visible ? '🟢' : '⚫'}
                 {name}
                 {id === socket.id ? '(you)' : ''}
                 {typing ? '⌨️ typing...' : ''}
