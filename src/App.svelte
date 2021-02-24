@@ -11,8 +11,6 @@
     // <input /> value binding
     let nickname = 'anonymous'
 
-    let officialNickname = nickname
-
     let visible
 
     $: if (visible) unread = false
@@ -36,7 +34,7 @@
     const sendMessage = () => {
         if (message) {
             socket.emit('chat message', message)
-            add_to_messages(`${officialNickname}: ${message}`)
+            add_to_messages(`${sockets[socket.id].name}: ${message}`)
             typingStop()
             message = ''
         }
@@ -123,7 +121,12 @@
     />
     <button on:click={updateNickname}>Update Nickname</button>
     <ul>
-        {#each Object.entries(sockets) as [id, { name, typing, visible }]}
+        {#each Object.entries(sockets).sort(([a], [b]) => {
+            if (a === b) return 0
+            if (b === socket.id) return 1
+            if (a === socket.id) return -1
+            return 0
+        }) as [id, { name, typing, visible }]}
             <li>
                 {visible ? '🟢' : '⚫'}
                 {name}
