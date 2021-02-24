@@ -30,6 +30,18 @@
     socket.on('visibility', ({ id, visible }) => {
         sockets[id].visible = visible
     })
+    let challenge = null
+
+    const issueChallenge = id => {
+        socket.emit('challenge', id)
+        sockets[id].challenge = true
+    }
+
+    const acceptChallenge = id => {
+        socket.emit('challenge accept', id)
+        sockets[id].challenge = true
+        challenge = id
+    }
 
     updateVisible()
 
@@ -95,6 +107,8 @@
         if (!visible) unread = true
         add_to_messages(msg)
     })
+    socket.on('challenge', id => (sockets[id].challenge = true))
+    socket.on('challenge accept', id => (challenge = id))
     socket.on('sockets', value => (sockets = value))
     socket.on('update nickname', ({ id, name }) => (sockets[id].name = name))
     socket.on('typing start', id => (sockets[id].typing = true))
@@ -134,12 +148,25 @@
             <li>
                 {visible ? '🟢' : '⚫'}
                 {name}
-                {id === socket.id ? '(you)' : ''}
+                {#if id === socket.id}
+                    {'(you)'}
+                {:else}
+                    <button
+                        on:click={() => {
+                            !challenge
+                                ? issueChallenge(id)
+                                : acceptChallenge(id)
+                        }}>{challenge ? 'Accept' : 'Challenge'}</button
+                    >
+                {/if}
                 {typing ? '⌨️ typing...' : ''}
             </li>
         {/each}
     </ul>
-    <Game player={socket.id}/>
+    <Game player={socket.id} />
+    {#if challenge}
+        <h1>{challenge}, let's go!</h1>
+    {/if}
 </main>
 
 <style lang="scss">

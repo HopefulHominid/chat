@@ -21,6 +21,16 @@ io.on('connection', socket => {
 
     io.emit('sockets', sockets)
 
+    socket.on('challenge', id => {
+        // private message to `id`
+        socket.to(id).emit('challenge', socket.id)
+    })
+
+    socket.on('challenge accept', id => {
+        // private message to `id`
+        socket.to(id).emit('challenge accept', socket.id)
+    })
+
     socket.on('chat message', message => {
         socket.broadcast.emit(
             'chat message',
