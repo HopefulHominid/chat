@@ -1,7 +1,11 @@
 <script>
     import { io } from 'socket.io-client'
 
+    import Game from './Game.svelte'
+
     const socket = io()
+
+    const rps = ['🤚', '🤜', '✌️']
 
     let sockets = {}
 
@@ -135,6 +139,7 @@
             </li>
         {/each}
     </ul>
+    <Game player={socket.id}/>
 </main>
 
 <style lang="scss">
