@@ -62,9 +62,10 @@
 
     let messages = []
 
-    // WARN: keeping this just in case. superstitious
-    // window.scrollTo(0, document.body.scrollHeight)
-    const add_to_messages = str => (messages = [...messages, str])
+    const add_to_messages = str => {
+        messages = [...messages, str]
+        window.scrollTo(0, document.body.scrollHeight)
+    }
 
     socket.on('chat message', add_to_messages)
     socket.on('sockets', value => (sockets = value))
