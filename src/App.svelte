@@ -15,6 +15,16 @@
 
     socket.emit('connection', nickname)
 
+    let visible
+
+    $: if (visible) unread = false
+
+    const updateVisible = () => visible = document.visibilityState === 'visible'
+
+    updateVisible()
+
+    document.addEventListener('visibilitychange', updateVisible)
+
     const sendMessage = () => {
         if (message) {
             socket.emit('chat message', message)
@@ -30,6 +40,10 @@
             officialNickname = nickname
         }
     }
+
+    let unread = false
+
+    $: faviconType = unread ? 'message' : 'resting'
 
     let typing = false
     let delay = 2000
@@ -67,11 +81,18 @@
         window.scrollTo(0, document.body.scrollHeight)
     }
 
-    socket.on('chat message', add_to_messages)
+    socket.on('chat message', msg => {
+        if (!visible) unread = true
+        add_to_messages(msg)
+    })
     socket.on('sockets', value => (sockets = value))
     socket.on('typing start', id => (sockets[id].typing = true))
     socket.on('typing stop', id => (sockets[id].typing = false))
 </script>
+
+<svelte:head>
+	<link rel="icon" href="/{faviconType}.ico" />
+</svelte:head>
 
 <main>
     <ul>
