@@ -2,7 +2,6 @@
     import { range, style } from './scripts/utils.js'
 
     export let player
-    export let players
 
     let playerIndex = 0
 

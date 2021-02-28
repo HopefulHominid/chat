@@ -34,7 +34,10 @@
 
     const issueChallenge = id => {
         socket.emit('challenge', id)
-        sockets[id].challenge = true
+        sockets[socket.id].to.push(id)
+        sockets[id].from.push(socket.id)
+        // have to force sockets update if we gon do push here
+        sockets = sockets
     }
 
     const acceptChallenge = id => {
@@ -107,9 +110,18 @@
         if (!visible) unread = true
         add_to_messages(msg)
     })
-    socket.on('challenge', id => (sockets[id].challenge = true))
+    socket.on('challenge', id => {
+        sockets[socket.id].from.push(id)
+        // have to do reactive update b/c we use push
+        sockets = sockets
+    })
     socket.on('challenge accept', id => (challenge = id))
     socket.on('sockets', value => (sockets = value))
+    socket.on('disconnection', id => {
+        delete sockets[id]
+        // trigger reactivity just in case... idk if necessary
+        sockets = sockets
+    })
     socket.on('update nickname', ({ id, name }) => (sockets[id].name = name))
     socket.on('typing start', id => (sockets[id].typing = true))
     socket.on('typing stop', id => (sockets[id].typing = false))
@@ -150,20 +162,22 @@
                 {name}
                 {#if id === socket.id}
                     {'(you)'}
+                {:else if sockets[socket.id].from.includes(id)}
+                    <button on:click={() => acceptChallenge(id)}
+                        >{'Accept'}</button
+                    >
+                {:else if sockets[socket.id].to.includes(id)}
+                    <button disabled>{'waiting for response...'}</button>
                 {:else}
-                    <button
-                        on:click={() => {
-                            !challenge
-                                ? issueChallenge(id)
-                                : acceptChallenge(id)
-                        }}>{challenge ? 'Accept' : 'Challenge'}</button
+                    <button on:click={() => issueChallenge(id)}
+                        >{'Challenge'}</button
                     >
                 {/if}
                 {typing ? '⌨️ typing...' : ''}
             </li>
         {/each}
     </ul>
-    <Game player={socket.id} />
+    <!-- <Game player={socket.id} /> -->
     {#if challenge}
         <h1>{challenge}, let's go!</h1>
     {/if}

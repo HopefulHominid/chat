@@ -16,7 +16,9 @@ io.on('connection', socket => {
     sockets[socket.id] = {
         name: 'anonymous',
         typing: false,
-        visible: true
+        visible: true,
+        from: [],
+        to: []
     }
 
     io.emit('sockets', sockets)
@@ -63,11 +65,8 @@ io.on('connection', socket => {
     })
 
     socket.on('disconnect', _reason => {
-        // NOTE: disconnect is reserved
-        // NOTE: is there a diff btw `socket.broadcast` and `io` here ?
-        //       if we're disconnecting... idk man.
         delete sockets[socket.id]
-        socket.broadcast.emit('sockets', sockets)
+        socket.broadcast.emit('disconnection', socket.id)
     })
 })
 
