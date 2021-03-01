@@ -36,7 +36,7 @@ io.on('connection', socket => {
     socket.on('chat message', message => {
         socket.broadcast.emit(
             'chat message',
-            `${sockets[socket.id]?.name}: ${message}`
+            `${(sockets[socket.id]) ? sockets[socket.id].name : '???'}: ${message}`
         )
     })
 
