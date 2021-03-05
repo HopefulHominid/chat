@@ -34,10 +34,17 @@ io.on('connection', socket => {
     })
 
     socket.on('chat message', message => {
-        socket.broadcast.emit(
-            'chat message',
-            `${(sockets[socket.id]) ? sockets[socket.id].name : '???'}: ${message}`
-        )
+        const formatter = new Intl.DateTimeFormat('en', {
+            dateStyle: 'long',
+            timeStyle: 'medium',
+            calendar: 'japanese'
+        })
+
+        socket.broadcast.emit('chat message', {
+            timestamp: formatter.format(Date.now()),
+            username: sockets[socket.id] ? sockets[socket.id].name : '???',
+            message
+        })
     })
 
     socket.on('visibility', visible => {

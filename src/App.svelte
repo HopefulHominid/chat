@@ -52,8 +52,17 @@
 
     const sendMessage = () => {
         if (message) {
+            const formatter = new Intl.DateTimeFormat('en', {
+                dateStyle: 'long',
+                timeStyle: 'medium',
+                calendar: 'japanese'
+            })
             socket.emit('chat message', message)
-            add_to_messages(`${sockets[socket.id].name}: ${message}`)
+            add_to_messages({
+                timestamp: formatter.format(Date.now()),
+                username: sockets[socket.id].name,
+                message
+            })
             typingStop()
             message = ''
         }
@@ -101,8 +110,8 @@
 
     let messages = []
 
-    const add_to_messages = str => {
-        messages = [...messages, str]
+    const add_to_messages = msg => {
+        messages = [...messages, msg]
         window.scrollTo(0, document.body.scrollHeight)
     }
 
@@ -133,8 +142,8 @@
 
 <main>
     <ul>
-        {#each messages as message}
-            <li>{message}</li>
+        {#each messages as { timestamp, username, message }}
+            <li title={timestamp}>{username}: {message}</li>
         {/each}
     </ul>
     <input
