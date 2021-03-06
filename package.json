@@ -3,7 +3,8 @@
         "node": "15.x"
     },
     "scripts": {
-        "start": "snowpack build && node build/server.js"
+        "start": "export NODE_ENV=production && snowpack build && node build/server.js",
+        "dev": "export NODE_ENV=development && snowpack build && node build/server.js"
     },
     "dependencies": {
         "@replit/database": "^2.0.0",
@@ -16,6 +17,7 @@
         "socket.io": "^3.1.1",
         "socket.io-client": "^3.1.1",
         "svelte": "3.32.1",
-        "svelte-preprocess": "^4.6.9"
+        "svelte-preprocess": "^4.6.9",
+        "uuid": "^8.3.2"
     }
 }

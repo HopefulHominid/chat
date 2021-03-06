@@ -1,3 +1,20 @@
+// NOTE: default to in-memory database if we're not in production
+let database = (() => {
+    const database = {}
+    // NOTE: not serializing, but we could if we wanted
+    return {
+        get: key => Promise.resolve(key in database ? database[key] : null),
+        set: (key, value) => (database[key] = value)
+    }
+})()
+
+if (process.env.NODE_ENV === 'production') {
+    const Database = require('@replit/database')
+    database = new Database()
+}
+
+const { v4: uuidv4 } = require('uuid')
+
 const express = require('express')
 
 const app = express()
@@ -10,8 +27,34 @@ app.get('*', (req, res) => {
     res.sendFile(__dirname + '/index.html')
 })
 
-const sockets = {}
+io.use(async (socket, next) => {
+    const { sessionID } = socket.handshake.auth
 
+    if (sessionID) {
+        const session = await database.get(sessionID)
+
+        if (session) {
+            socket.sessionID = sessionID
+            socket.userID = session.userID
+            socket.username = session.username
+            return next()
+        } else {
+            // TODO: sorry we can't seem to find that user 😬
+            //       guess we'll create a new one ...
+        }
+    }
+
+    socket.sessionID = uuidv4()
+    socket.userID = uuidv4()
+    socket.username = 'anonymous'
+
+    // TODO: why not store it right after you create it ? why wait until discon
+
+    next()
+})
+
+const sockets = {}
+ 
 io.on('connection', socket => {
     sockets[socket.id] = {
         name: 'anonymous',
