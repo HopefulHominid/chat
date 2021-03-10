@@ -2,10 +2,14 @@
     import { io } from 'socket.io-client'
 
     import Game from './Game.svelte'
-
-    const socket = io()
-
     const rps = ['🤚', '🤜', '✌️']
+
+    const socket = io({
+        // NOTE: need a chance to attach the saved sessionID to the socket
+        autoConnect: true
+    })
+    // socket.auth = { sessionID: localStorage.getItem('sessionID') }
+    // socket.connect()
 
     let sockets = {}
 
@@ -19,6 +23,49 @@
 
     $: if (visible) unread = false
 
+    const attachEvents = () => {
+        socket.on('visibility', ({ id, visible }) => {
+            if (sockets[socket.id]) sockets[id].visible = visible
+        })
+
+        // socket.on('cise', console.log)
+
+        // socket.on('session', ({ sessionID, userID, username }) => {
+        //     socket.auth = { sessionID }
+
+        //     localStorage.setItem('sessionID', sessionID)
+
+        //     socket.userID = userID
+
+        //     nickname = username
+        // })
+
+        socket.on('chat message', msg => {
+            if (!visible) unread = true
+            add_to_messages(msg)
+        })
+        socket.on('challenge', id => {
+            sockets[socket.id].from.push(id)
+            // have to do reactive update b/c we use push
+            sockets = sockets
+        })
+        socket.on('challenge accept', id => (challenge = id))
+        socket.on('sockets', value => (sockets = value))
+        socket.on('disconnection', id => {
+            delete sockets[id]
+            // trigger reactivity just in case... idk if necessary
+            sockets = sockets
+        })
+        socket.on(
+            'update nickname',
+            ({ id, name }) => (sockets[id].name = name)
+        )
+        socket.on('typing start', id => (sockets[id].typing = true))
+        socket.on('typing stop', id => (sockets[id].typing = false))
+    }
+
+    attachEvents()
+
     const updateVisible = () => {
         visible = document.visibilityState === 'visible'
         socket.emit('visibility', visible)
@@ -26,10 +73,9 @@
         //       that we miss the first value from an update here
         if (sockets[socket.id]) sockets[socket.id].visible = visible
     }
+    updateVisible()
+    document.addEventListener('visibilitychange', updateVisible)
 
-    socket.on('visibility', ({ id, visible }) => {
-        sockets[id].visible = visible
-    })
     let challenge = null
 
     const issueChallenge = id => {
@@ -45,10 +91,6 @@
         sockets[id].challenge = true
         challenge = id
     }
-
-    updateVisible()
-
-    document.addEventListener('visibilitychange', updateVisible)
 
     const sendMessage = () => {
         if (message) {
@@ -114,26 +156,6 @@
         messages = [...messages, msg]
         window.scrollTo(0, document.body.scrollHeight)
     }
-
-    socket.on('chat message', msg => {
-        if (!visible) unread = true
-        add_to_messages(msg)
-    })
-    socket.on('challenge', id => {
-        sockets[socket.id].from.push(id)
-        // have to do reactive update b/c we use push
-        sockets = sockets
-    })
-    socket.on('challenge accept', id => (challenge = id))
-    socket.on('sockets', value => (sockets = value))
-    socket.on('disconnection', id => {
-        delete sockets[id]
-        // trigger reactivity just in case... idk if necessary
-        sockets = sockets
-    })
-    socket.on('update nickname', ({ id, name }) => (sockets[id].name = name))
-    socket.on('typing start', id => (sockets[id].typing = true))
-    socket.on('typing stop', id => (sockets[id].typing = false))
 </script>
 
 <svelte:head>

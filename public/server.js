@@ -27,34 +27,34 @@ app.get('*', (req, res) => {
     res.sendFile(__dirname + '/index.html')
 })
 
-io.use(async (socket, next) => {
-    const { sessionID } = socket.handshake.auth
+// io.use(async (socket, next) => {
+//     const { sessionID } = socket.handshake.auth
 
-    if (sessionID) {
-        const session = await database.get(sessionID)
+//     if (sessionID) {
+//         const session = database.get(sessionID)
 
-        if (session) {
-            socket.sessionID = sessionID
-            socket.userID = session.userID
-            socket.username = session.username
-            return next()
-        } else {
-            // TODO: sorry we can't seem to find that user 😬
-            //       guess we'll create a new one ...
-        }
-    }
+//         if (session) {
+//             socket.sessionID = sessionID
+//             socket.userID = session.userID
+//             socket.username = session.username
+//             return next()
+//         } else {
+//             // TODO: sorry we can't seem to find that user 😬
+//             //       guess we'll create a new one ...
+//         }
+//     }
 
-    socket.sessionID = uuidv4()
-    socket.userID = uuidv4()
-    socket.username = 'anonymous'
+//     socket.sessionID = uuidv4()
+//     socket.userID = uuidv4()
+//     socket.username = 'anonymous'
 
-    // TODO: why not store it right after you create it ? why wait until discon
+//     // TODO: why not store it right after you create it ? why wait until discon
 
-    next()
-})
+//     next()
+// })
 
 const sockets = {}
- 
+
 io.on('connection', socket => {
     sockets[socket.id] = {
         name: 'anonymous',
@@ -63,6 +63,15 @@ io.on('connection', socket => {
         from: [],
         to: []
     }
+
+    // socket.cise = 'nice'
+    // socket.emit('cise', 'wow')
+
+    // socket.emit('session', {
+    //     sessionID: socket.sessionID,
+    //     userID: socket.userID,
+    //     username: socket.username
+    // })
 
     io.emit('sockets', sockets)
 
