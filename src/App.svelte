@@ -142,8 +142,8 @@
         clearTimeout(hook)
     }
 
-    const messageKeydown = ({ key }) => {
-        if (key === 'Enter') sendMessage()
+    const messageKeydown = ({ key, ctrlKey }) => {
+        if (key === 'Enter' && ctrlKey) sendMessage()
     }
 
     const nicknameKeydown = ({ key }) => {
@@ -165,11 +165,15 @@
 <main>
     <ul>
         {#each messages as { timestamp, username, message }}
-            <li title={timestamp}>{username}: {message}</li>
+            <li title={timestamp}>
+                {username}:
+                <pre>{message}</pre>
+            </li>
         {/each}
     </ul>
-    <input
+    <textarea
         autocomplete="off"
+        spellcheck="false"
         bind:value={message}
         on:keydown={messageKeydown}
         on:input={typingStart}
@@ -220,6 +224,7 @@
 
     main,
     input,
+    textarea,
     button {
         font-size: 30px;
     }
