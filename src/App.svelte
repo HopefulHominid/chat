@@ -92,6 +92,8 @@
         challenge = id
     }
 
+    let lastMessage
+
     const sendMessage = () => {
         if (message) {
             const formatter = new Intl.DateTimeFormat('en', {
@@ -103,6 +105,7 @@
             add_to_messages({
                 timestamp: formatter.format(Date.now()),
                 username: sockets[socket.id].name,
+                user: socket.id,
                 message
             })
             typingStop()
@@ -161,6 +164,8 @@
 
     const add_to_messages = msg => {
         messages = [...messages, msg]
+
+        lastMessage = msg.user
         window.scrollTo(0, document.body.scrollHeight)
     }
 </script>
@@ -171,9 +176,9 @@
 
 <main>
     <ul>
-        {#each messages as { timestamp, username, message }}
+        {#each messages as { timestamp, username, message, user }, i}
             <li title={timestamp}>
-                {username}:
+                {messages[i - 1]?.user === user ? '' : `${username}:`}
                 <pre>{message}</pre>
             </li>
         {/each}

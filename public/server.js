@@ -95,6 +95,7 @@ io.on('connection', socket => {
         socket.broadcast.emit('chat message', {
             timestamp: formatter.format(Date.now()),
             username: sockets[socket.id] ? sockets[socket.id].name : '???',
+            user: socket.id,
             message
         })
     })
