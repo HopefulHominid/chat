@@ -142,8 +142,15 @@
         clearTimeout(hook)
     }
 
-    const messageKeydown = ({ key, ctrlKey }) => {
-        if (key === 'Enter' && ctrlKey) sendMessage()
+    const messageKeydown = e => {
+        if (e.key === 'Enter') {
+            if (e.ctrlKey) {
+                message += '\n'
+            } else {
+                sendMessage()
+                e.preventDefault()
+            }
+        }
     }
 
     const nicknameKeydown = ({ key }) => {
