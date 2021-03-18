@@ -1,67 +1,92 @@
 <script>
     import { io } from 'socket.io-client'
 
-    import Game from './Game.svelte'
-    const rps = ['🤚', '🤜', '✌️']
+    // import Game from './Game.svelte'
+    // const rps = ['🤚', '🤜', '✌️']
 
-    const socket = io({
-        // NOTE: need a chance to attach the saved sessionID to the socket
-        autoConnect: true
+    const socket = io({ autoConnect: false })
+    socket.auth = { privateID: localStorage.getItem('privateID') }
+    socket.connect()
+    socket.onAny((event, ...args) => {
+        console.log('client event:', event, args)
     })
-    // socket.auth = { sessionID: localStorage.getItem('sessionID') }
-    // socket.connect()
 
-    let sockets = {}
+    let session = {}
 
-    // <input /> value binding
+    let sessions = {}
+
     let message = 'your message here'
 
-    // <input /> value binding
-    let nickname = 'anonymous'
+    let nickname
 
     let visible
 
     $: if (visible) unread = false
 
+    // TODO: listen for connect and disconnect events to set some variable to true/false?
     const attachEvents = () => {
-        socket.on('visibility', ({ id, visible }) => {
-            if (sockets[socket.id]) sockets[id].visible = visible
+        socket.on('session', hateThisNamingHack => {
+            socket.auth = { privateID: hateThisNamingHack.privateID }
+
+            console.log(hateThisNamingHack.privateID)
+
+            localStorage.setItem('privateID', hateThisNamingHack.privateID)
+
+            session = hateThisNamingHack
+
+            nickname = session.username
+
+            session.visible = true
         })
 
-        // socket.on('cise', console.log)
+        socket.on('sockets', sockets =>
+            sockets.forEach(
+                ({ id, username }) =>
+                    (sessions[id] = { publicID: id, username })
+            )
+        )
 
-        // socket.on('session', ({ sessionID, userID, username }) => {
-        //     socket.auth = { sessionID }
+        socket.on('user connected', ({ id, username }) => {
+            if (id !== session.publicID) sessions[id] = { username }
+        })
 
-        //     localStorage.setItem('sessionID', sessionID)
-
-        //     socket.userID = userID
-
-        //     nickname = username
-        // })
+        socket.on('visibility', ({ id, visibleNew }) => {
+            if (id === session.publicID) {
+                session.visible = visibleNew
+                visible = visibleNew
+            } else if (sessions[id]) {
+                sessions[id].visible = visibleNew
+            }
+        })
 
         socket.on('chat message', msg => {
             if (!visible) unread = true
             add_to_messages(msg)
         })
-        socket.on('challenge', id => {
-            sockets[socket.id].from.push(id)
-            // have to do reactive update b/c we use push
-            sockets = sockets
+
+        // socket.on('challenge', id => {
+        //     sockets[socket.id].from.push(id)
+        //     // have to do reactive update b/c we use push
+        //     sockets = sockets
+        // })
+        // socket.on('challenge accept', id => (challenge = id))
+
+        socket.on('update nickname', ({ id, username }) => {
+            if (id === session.publicID) {
+                session.username = username
+                nickname = username
+            } else if (sessions[id]) {
+                sessions[id].username = username
+            }
         })
-        socket.on('challenge accept', id => (challenge = id))
-        socket.on('sockets', value => (sockets = value))
-        socket.on('disconnection', id => {
-            delete sockets[id]
-            // trigger reactivity just in case... idk if necessary
-            sockets = sockets
+
+        socket.on('typing', ({ id, typing }) => {
+            if (id === session.publicID) {
+                session.typing = typing
+            } else if (sessions[id]) {
+                sessions[id].typing = typing
+            }
         })
-        socket.on(
-            'update nickname',
-            ({ id, name }) => (sockets[id].name = name)
-        )
-        socket.on('typing start', id => (sockets[id].typing = true))
-        socket.on('typing stop', id => (sockets[id].typing = false))
     }
 
     attachEvents()
@@ -69,9 +94,7 @@
     const updateVisible = () => {
         visible = document.visibilityState === 'visible'
         socket.emit('visibility', visible)
-        // WARN: our default of visible: true might be hiding the fact
-        //       that we miss the first value from an update here
-        if (sockets[socket.id]) sockets[socket.id].visible = visible
+        session.visible = visible
     }
     updateVisible()
     document.addEventListener('visibilitychange', updateVisible)
@@ -79,20 +102,18 @@
     let challenge = null
 
     const issueChallenge = id => {
-        socket.emit('challenge', id)
-        sockets[socket.id].to.push(id)
-        sockets[id].from.push(socket.id)
-        // have to force sockets update if we gon do push here
-        sockets = sockets
+        // socket.emit('challenge', id)
+        // sockets[socket.id].to.push(id)
+        // sockets[id].from.push(socket.id)
+        // // have to force sockets update if we gon do push here
+        // sockets = sockets
     }
 
     const acceptChallenge = id => {
-        socket.emit('challenge accept', id)
-        sockets[id].challenge = true
-        challenge = id
+        // socket.emit('challenge accept', id)
+        // sockets[id].challenge = true
+        // challenge = id
     }
-
-    let lastMessage
 
     const sendMessage = () => {
         if (message) {
@@ -101,13 +122,16 @@
                 timeStyle: 'medium',
                 calendar: 'japanese'
             })
-            socket.emit('chat message', message)
-            add_to_messages({
+
+            const richMessage = {
                 timestamp: formatter.format(Date.now()),
-                username: sockets[socket.id].name,
-                user: socket.id,
+                username: nickname,
+                id: session.publicID,
                 message
-            })
+            }
+
+            socket.emit('chat message', richMessage)
+            add_to_messages(richMessage)
             typingStop()
             message = ''
         }
@@ -116,7 +140,7 @@
     const updateNickname = () => {
         if (nickname) {
             socket.emit('update nickname', nickname)
-            sockets[socket.id].name = nickname
+            session.username = nickname
         }
     }
 
@@ -125,13 +149,15 @@
     $: faviconType = unread ? 'message' : 'resting'
 
     let typing = false
+
+    $: session.typing = typing
+
     let delay = 2000
     let hook
 
     const typingStart = () => {
         if (!typing) {
-            typing = true
-            socket.emit('typing start')
+            socket.emit('typing', (typing = true))
             hook = setTimeout(typingStop, delay)
         } else {
             clearTimeout(hook)
@@ -140,8 +166,7 @@
     }
 
     const typingStop = () => {
-        socket.emit('typing stop')
-        typing = false
+        socket.emit('typing', (typing = false))
         clearTimeout(hook)
     }
 
@@ -164,8 +189,6 @@
 
     const add_to_messages = msg => {
         messages = [...messages, msg]
-
-        lastMessage = msg.user
         window.scrollTo(0, document.body.scrollHeight)
     }
 </script>
@@ -176,9 +199,9 @@
 
 <main>
     <ul>
-        {#each messages as { timestamp, username, message, user }, i}
+        {#each messages as { timestamp, username, message, id }, i}
             <li title={timestamp}>
-                {messages[i - 1]?.user === user ? '' : `${username}:`}
+                {messages[i - 1]?.id === id ? '' : `${username}:`}
                 <pre>{message}</pre>
             </li>
         {/each}
@@ -198,18 +221,13 @@
     />
     <button on:click={updateNickname}>Update Nickname</button>
     <ul>
-        {#each Object.entries(sockets).sort(([a], [b]) => {
-            if (a === b) return 0
-            if (b === socket.id) return 1
-            if (a === socket.id) return -1
-            return 0
-        }) as [id, { name, typing, visible }]}
+        {#each [session, ...Object.values(sessions)] as { publicID, username, typing, visible }}
             <li>
                 {visible ? '🟢' : '⚫'}
-                {name}
-                {#if id === socket.id}
+                {username}
+                {#if publicID === session.publicID}
                     {'(you)'}
-                {:else if sockets[socket.id].from.includes(id)}
+                    <!-- {:else if sockets[socket.id].from.includes(id)}
                     <button on:click={() => acceptChallenge(id)}
                         >{'Accept'}</button
                     >
@@ -218,7 +236,7 @@
                 {:else}
                     <button on:click={() => issueChallenge(id)}
                         >{'Challenge'}</button
-                    >
+                    > -->
                 {/if}
                 {typing ? '⌨️ typing...' : ''}
             </li>

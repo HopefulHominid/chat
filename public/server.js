@@ -27,107 +27,106 @@ app.get('*', (req, res) => {
     res.sendFile(__dirname + '/index.html')
 })
 
-// io.use(async (socket, next) => {
-//     const { sessionID } = socket.handshake.auth
+io.use(async (socket, next) => {
+    const { privateID } = socket.handshake.auth
 
-//     if (sessionID) {
-//         const session = database.get(sessionID)
+    if (privateID) {
+        const session = await database.get(privateID)
 
-//         if (session) {
-//             socket.sessionID = sessionID
-//             socket.userID = session.userID
-//             socket.username = session.username
-//             return next()
-//         } else {
-//             // TODO: sorry we can't seem to find that user 😬
-//             //       guess we'll create a new one ...
-//         }
-//     }
-
-//     socket.sessionID = uuidv4()
-//     socket.userID = uuidv4()
-//     socket.username = 'anonymous'
-
-//     // TODO: why not store it right after you create it ? why wait until discon
-
-//     next()
-// })
-
-const sockets = {}
-
-io.on('connection', socket => {
-    sockets[socket.id] = {
-        name: 'anonymous',
-        typing: false,
-        visible: true,
-        from: [],
-        to: []
+        if (session) {
+            socket.session = session
+            return next()
+        } else {
+            // TODO: sorry we can't seem to find that user 😬
+        }
     }
 
-    // socket.cise = 'nice'
-    // socket.emit('cise', 'wow')
+    const session = {
+        privateID: uuidv4(),
+        publicID: uuidv4(),
+        username: 'anonymous'
+    }
 
-    // socket.emit('session', {
-    //     sessionID: socket.sessionID,
-    //     userID: socket.userID,
-    //     username: socket.username
+    database.set(session.privateID, session)
+
+    socket.session = session
+
+    next()
+})
+
+io.on('connection', socket => {
+    socket.onAny((event, ...args) => {
+        console.log('server event:', event, args)
+    })
+
+    socket.emit(
+        'sockets',
+        [...io.of('/').sockets]
+            .map(([_id, socket]) => socket)
+            .filter(
+                ({ session: { publicID } }) =>
+                    publicID !== socket.session.publicID
+            )
+            .map(({ session: { publicID: id, username } }) => ({
+                id,
+                username
+            }))
+    )
+
+    socket.emit('session', socket.session)
+
+    socket.join(socket.session.publicID)
+
+    socket.broadcast.emit('user connected', {
+        id: socket.session.publicID,
+        username: socket.session.username
+    })
+
+    // socket.on('challenge', id => {
+    //     // private message to `id`
+    //     socket.to(id).emit('challenge', socket.id)
     // })
 
-    io.emit('sockets', sockets)
-
-    socket.on('challenge', id => {
-        // private message to `id`
-        socket.to(id).emit('challenge', socket.id)
-    })
-
-    socket.on('challenge accept', id => {
-        // private message to `id`
-        socket.to(id).emit('challenge accept', socket.id)
-    })
+    // socket.on('challenge accept', id => {
+    //     // private message to `id`
+    //     socket.to(id).emit('challenge accept', socket.id)
+    // })
 
     socket.on('chat message', message => {
-        const formatter = new Intl.DateTimeFormat('en', {
-            dateStyle: 'long',
-            timeStyle: 'medium',
-            calendar: 'japanese'
-        })
-
-        socket.broadcast.emit('chat message', {
-            timestamp: formatter.format(Date.now()),
-            username: sockets[socket.id] ? sockets[socket.id].name : '???',
-            user: socket.id,
-            message
-        })
+        socket.broadcast.emit('chat message', message)
     })
 
     socket.on('visibility', visible => {
-        sockets[socket.id].visible = visible
         socket.broadcast.emit('visibility', {
             visible,
-            id: socket.id
+            id: socket.session.publicID
         })
     })
 
-    socket.on('typing start', () => {
-        io.emit('typing start', socket.id)
-    })
-
-    socket.on('typing stop', () => {
-        io.emit('typing stop', socket.id)
+    socket.on('typing', typing => {
+        socket.broadcast.emit('typing', {
+            id: socket.session.publicID,
+            typing
+        })
     })
 
     socket.on('update nickname', nickname => {
-        sockets[socket.id].name = nickname
+        socket.session.username = nickname
+        database.set(socket.session.privateID, {
+            privateID: socket.session.privateID,
+            publicID: socket.session.publicID,
+            username: nickname
+        })
         socket.broadcast.emit('update nickname', {
-            id: socket.id,
-            name: nickname
+            id: socket.session.publicID,
+            username: nickname
         })
     })
 
-    socket.on('disconnect', _reason => {
-        delete sockets[socket.id]
-        socket.broadcast.emit('disconnection', socket.id)
-    })
+    // socket.on('disconnect', _reason => {
+    //     delete sockets[socket.id]
+    //     socket.broadcast.emit('disconnection', socket.id)
+    // })
 })
 
 http.listen(process.env.PORT || 8080)
