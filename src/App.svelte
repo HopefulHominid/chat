@@ -1,5 +1,6 @@
 <script>
     import { io } from 'socket.io-client'
+    import { tick } from 'svelte'
 
     // import Game from './Game.svelte'
     // const rps = ['🤚', '🤜', '✌️']
@@ -23,41 +24,34 @@
 
     $: if (visible) unread = false
 
+    const saveSession = ({ publicID, ...session }) =>
+        (sessions[publicID] = session)
+
     // TODO: listen for connect and disconnect events to set some variable to true/false?
     const attachEvents = () => {
-        socket.on('session', hateThisNamingHack => {
-            socket.auth = { privateID: hateThisNamingHack.privateID }
+        socket.on('session', ({ privateID, ...hackSession }) => {
+            socket.auth = { privateID }
 
-            console.log(hateThisNamingHack.privateID)
+            localStorage.setItem('privateID', privateID)
 
-            localStorage.setItem('privateID', hateThisNamingHack.privateID)
-
-            session = hateThisNamingHack
+            session = hackSession
 
             nickname = session.username
 
             session.visible = true
         })
 
-        socket.on('sockets', sockets =>
-            sockets.forEach(
-                ({ id, username }) =>
-                    (sessions[id] = { publicID: id, username })
+        socket.on('sessions', sessions => sessions.forEach(saveSession))
+
+        socket.on('user connected', saveSession)
+        //
+        //
+        ;['visible', 'username', 'typing'].forEach(event =>
+            socket.on(
+                event,
+                session => (sessions[session.id][event] = session[event])
             )
         )
-
-        socket.on('user connected', ({ id, username }) => {
-            if (id !== session.publicID) sessions[id] = { username }
-        })
-
-        socket.on('visibility', ({ id, visibleNew }) => {
-            if (id === session.publicID) {
-                session.visible = visibleNew
-                visible = visibleNew
-            } else if (sessions[id]) {
-                sessions[id].visible = visibleNew
-            }
-        })
 
         socket.on('chat message', msg => {
             if (!visible) unread = true
@@ -70,31 +64,15 @@
         //     sockets = sockets
         // })
         // socket.on('challenge accept', id => (challenge = id))
-
-        socket.on('update nickname', ({ id, username }) => {
-            if (id === session.publicID) {
-                session.username = username
-                nickname = username
-            } else if (sessions[id]) {
-                sessions[id].username = username
-            }
-        })
-
-        socket.on('typing', ({ id, typing }) => {
-            if (id === session.publicID) {
-                session.typing = typing
-            } else if (sessions[id]) {
-                sessions[id].typing = typing
-            }
-        })
     }
 
     attachEvents()
 
     const updateVisible = () => {
-        visible = document.visibilityState === 'visible'
-        socket.emit('visibility', visible)
-        session.visible = visible
+        const visibleNew = document.visibilityState === 'visible'
+        socket.emit('visible', visibleNew)
+        session.visible = visibleNew
+        visible = visibleNew
     }
     updateVisible()
     document.addEventListener('visibilitychange', updateVisible)
@@ -139,7 +117,7 @@
 
     const updateNickname = () => {
         if (nickname) {
-            socket.emit('update nickname', nickname)
+            socket.emit('username', nickname)
             session.username = nickname
         }
     }
@@ -187,8 +165,9 @@
 
     let messages = []
 
-    const add_to_messages = msg => {
+    const add_to_messages = async msg => {
         messages = [...messages, msg]
+        await tick()
         window.scrollTo(0, document.body.scrollHeight)
     }
 </script>

@@ -1,39 +1,28 @@
-// NOTE: default to in-memory database if we're not in production
-let database = (() => {
-    const database = {}
-    // NOTE: not serializing, but we could if we wanted
-    return {
-        get: key => Promise.resolve(key in database ? database[key] : null),
-        set: (key, value) => (database[key] = value)
-    }
-})()
+const crypto = require('crypto')
+const randomID = () => crypto.randomBytes(8).toString('hex')
 
-if (process.env.NODE_ENV === 'production') {
-    const Database = require('@replit/database')
-    database = new Database()
-}
-
-const { v4: uuidv4 } = require('uuid')
+const { sessionStore } = require('./sessionStore')
 
 const express = require('express')
-
 const app = express()
 const http = require('http').createServer(app)
 const io = require('socket.io')(http)
 
 app.use(express.static(__dirname + '/'))
 
-app.get('*', (req, res) => {
+app.get('*', (_req, res) => {
     res.sendFile(__dirname + '/index.html')
 })
 
 io.use(async (socket, next) => {
-    const { privateID } = socket.handshake.auth
+    let { privateID } = socket.handshake.auth
 
     if (privateID) {
-        const session = await database.get(privateID)
+        const session = await sessionStore.findSession(privateID)
 
         if (session) {
+            // WARN: DRY senses tingling, idk how to fix (1/2)
+            socket.privateID = privateID
             socket.session = session
             return next()
         } else {
@@ -41,14 +30,17 @@ io.use(async (socket, next) => {
         }
     }
 
+    privateID = randomID()
+
     const session = {
-        privateID: uuidv4(),
-        publicID: uuidv4(),
+        publicID: randomID(),
         username: 'anonymous'
     }
 
-    database.set(session.privateID, session)
+    sessionStore.saveSession(privateID, session)
 
+    // WARN: DRY senses tingling, idk how to fix (2/2)
+    socket.privateID = privateID
     socket.session = session
 
     next()
@@ -60,27 +52,20 @@ io.on('connection', socket => {
     })
 
     socket.emit(
-        'sockets',
-        [...io.of('/').sockets]
-            .map(([_id, socket]) => socket)
-            .filter(
-                ({ session: { publicID } }) =>
-                    publicID !== socket.session.publicID
-            )
-            .map(({ session: { publicID: id, username } }) => ({
-                id,
-                username
-            }))
+        'sessions',
+        sessionStore
+            .findAllSessions()
+            .filter(({ publicID }) => publicID !== socket.session.publicID)
     )
 
-    socket.emit('session', socket.session)
+    socket.emit('session', {
+        privateID: socket.privateID,
+        ...socket.session
+    })
 
     socket.join(socket.session.publicID)
 
-    socket.broadcast.emit('user connected', {
-        id: socket.session.publicID,
-        username: socket.session.username
-    })
+    socket.broadcast.emit('user connected', socket.session)
 
     // socket.on('challenge', id => {
     //     // private message to `id`
@@ -96,8 +81,10 @@ io.on('connection', socket => {
         socket.broadcast.emit('chat message', message)
     })
 
-    socket.on('visibility', visible => {
-        socket.broadcast.emit('visibility', {
+    socket.on('visible', visible => {
+        socket.session.visible = visible
+
+        socket.broadcast.emit('visible', {
             visible,
             id: socket.session.publicID
         })
@@ -110,14 +97,12 @@ io.on('connection', socket => {
         })
     })
 
-    socket.on('update nickname', nickname => {
+    socket.on('username', nickname => {
         socket.session.username = nickname
-        database.set(socket.session.privateID, {
-            privateID: socket.session.privateID,
-            publicID: socket.session.publicID,
-            username: nickname
-        })
-        socket.broadcast.emit('update nickname', {
+
+        sessionStore.saveSession(socket.session.privateID, socket.session)
+
+        socket.broadcast.emit('username', {
             id: socket.session.publicID,
             username: nickname
         })
