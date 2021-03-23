@@ -46,15 +46,15 @@ io.use(async (socket, next) => {
     next()
 })
 
-io.on('connection', socket => {
+io.on('connection', async socket => {
     socket.onAny((event, ...args) => {
         console.log('server event:', event, args)
     })
 
     socket.emit(
         'sessions',
-        sessionStore
-            .findAllSessions()
+        (await sessionStore
+            .findAllSessions())
             .filter(({ publicID }) => publicID !== socket.session.publicID)
     )
 
