@@ -5,8 +5,8 @@ let database = (() => {
     // WARN: should we be serializing?
     return {
         get: key => Promise.resolve(key in database ? database[key] : null),
-        set: (key, value) => (database[key] = value),
-        getAll: () => database
+        set: (key, value) => Promise.resolve((database[key] = value)),
+        getAll: () => Promise.resolve(database)
     }
 })()
 
