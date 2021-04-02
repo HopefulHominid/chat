@@ -1,5 +1,4 @@
 <script>
-    import Database from './components/Database.svelte'
     import { io } from 'socket.io-client'
     import { tick } from 'svelte'
 
@@ -242,8 +241,6 @@
     {/if}
 </main>
 
-<Database />
-
 <style lang="scss">
     @use './style/global.scss';
     @use './style/mixins.scss' as *;
@@ -256,7 +253,7 @@
     }
 
     main {
-        @include size;
+        width: 100%;
 
         // text-align: center;
     }

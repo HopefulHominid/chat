@@ -1,4 +1,13 @@
-import fetch from 'node-fetch'
+let fetch
+
+// this code is so 5Head
+// turns out it doesn't actually matter bc repl.it has strict CORS... wtf...
+// proxies seems to have problems w/ delete... just fuck me up
+if (typeof window === 'undefined') {
+    import('node-fetch').then(module => (fetch = module.default))
+} else {
+    fetch = window.fetch
+}
 
 class Client {
     /**
