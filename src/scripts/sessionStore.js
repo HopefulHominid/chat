@@ -1,4 +1,4 @@
-const { database } = require('./database')
+import { database } from './database.js'
 
 const sessionStore = {
     findSession: async privateID => await database.get(privateID),
@@ -6,6 +6,4 @@ const sessionStore = {
     findAllSessions: async () => Object.values(await database.getAll())
 }
 
-module.exports = {
-    sessionStore
-}
+export { sessionStore }

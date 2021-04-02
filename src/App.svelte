@@ -1,4 +1,5 @@
 <script>
+    import Database from './components/Database.svelte'
     import { io } from 'socket.io-client'
     import { tick } from 'svelte'
 
@@ -27,9 +28,19 @@
     const saveSession = ({ publicID, ...session }) =>
         (sessions[publicID] = session)
 
+    const magic = Math.random()
+
+    const wait = ms => new Promise(resolve => setTimeout(resolve, ms))
+
     // TODO: listen for connect and disconnect events to set some variable to true/false?
     const attachEvents = () => {
         socket.on('session', ({ privateID, ...hackSession }) => {
+            // WARN: so weird that this code has to be in here.
+            //       but if we don't put it in here there's some race
+            //       condition where we lose the first update on refresh
+            updateVisible()
+            document.addEventListener('visibilitychange', updateVisible)
+
             socket.auth = { privateID }
 
             localStorage.setItem('privateID', privateID)
@@ -43,7 +54,13 @@
 
         socket.on('sessions', sessions => sessions.forEach(saveSession))
 
-        socket.on('user connected', saveSession)
+        socket.on('user connected', newSession => {
+            if (newSession.publicID === session.publicID) {
+                console.log('o wow, we connected from somewhere else')
+            } else {
+                saveSession(newSession)
+            }
+        })
         //
         //
         ;['visible', 'username', 'typing'].forEach(event =>
@@ -74,8 +91,6 @@
         session.visible = visibleNew
         visible = visibleNew
     }
-    updateVisible()
-    document.addEventListener('visibilitychange', updateVisible)
 
     let challenge = null
 
@@ -226,6 +241,8 @@
         <h1>{challenge}, let's go!</h1>
     {/if}
 </main>
+
+<Database />
 
 <style lang="scss">
     @use './style/global.scss';

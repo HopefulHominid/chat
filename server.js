@@ -1,17 +1,26 @@
-const crypto = require('crypto')
+import crypto from 'crypto'
 const randomID = () => crypto.randomBytes(8).toString('hex')
 
-const { sessionStore } = require('./sessionStore')
+import { sessionStore } from './src/scripts/sessionStore.js'
 
-const express = require('express')
+import express from 'express'
+import { createServer } from 'http'
+import { Server } from 'socket.io'
+
+import { fileURLToPath } from 'url'
+import { dirname } from 'path'
+
+const __filename = fileURLToPath(import.meta.url)
+const __dirname = dirname(__filename)
+
 const app = express()
-const http = require('http').createServer(app)
-const io = require('socket.io')(http)
+const http = createServer(app)
+const io = new Server(http)
 
-app.use(express.static(__dirname + '/'))
+app.use(express.static(__dirname + '/dist'))
 
 app.get('*', (_req, res) => {
-    res.sendFile(__dirname + '/index.html')
+    res.sendFile(__dirname + '/dist/index.html')
 })
 
 io.use(async (socket, next) => {
@@ -51,13 +60,14 @@ io.on('connection', async socket => {
         console.log('server event:', event, args)
     })
 
+    // NOTE: does this need to be split into two ? kind of does the same
+    //       thing: initting ...
     socket.emit(
         'sessions',
-        (await sessionStore
-            .findAllSessions())
-            .filter(({ publicID }) => publicID !== socket.session.publicID)
+        (await sessionStore.findAllSessions()).filter(
+            ({ publicID }) => publicID !== socket.session.publicID
+        )
     )
-
     socket.emit('session', {
         privateID: socket.privateID,
         ...socket.session
@@ -83,6 +93,7 @@ io.on('connection', async socket => {
 
     socket.on('visible', visible => {
         socket.session.visible = visible
+        sessionStore.saveSession(socket.privateID, socket.session)
 
         socket.broadcast.emit('visible', {
             visible,
@@ -97,14 +108,14 @@ io.on('connection', async socket => {
         })
     })
 
-    socket.on('username', nickname => {
-        socket.session.username = nickname
+    socket.on('username', username => {
+        socket.session.username = username
 
-        sessionStore.saveSession(socket.session.privateID, socket.session)
+        sessionStore.saveSession(socket.privateID, socket.session)
 
         socket.broadcast.emit('username', {
-            id: socket.session.publicID,
-            username: nickname
+            username,
+            id: socket.session.publicID
         })
     })
 
@@ -114,4 +125,4 @@ io.on('connection', async socket => {
     // })
 })
 
-http.listen(process.env.PORT || 8080)
+http.listen(process.env.PORT || 3000)

@@ -8,6 +8,8 @@
     const makeSquare = i => ({ name: `t${i}`, value: '' })
 
     let squares = range(9).map(makeSquare)
+
+    const players = []
 </script>
 
 <p>{players[playerIndex].id === player ? 'move!' : 'waiting ...'}</p>
@@ -19,7 +21,7 @@
 </div>
 
 <style lang="scss">
-    @use './style/mixins.scss' as *;
+    @use '../style/mixins.scss' as *;
 
     #grid {
         background-color: blue;

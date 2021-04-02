@@ -1,3 +1,6 @@
+// TODO: pull request this guy to make the ES6 migration ? make new package ?
+import { Database } from './replit.js'
+
 // NOTE: default to in-memory database if we're not in production
 let database = (() => {
     // NOTE: we use a map to mimic the repl.it database's string keys
@@ -11,10 +14,7 @@ let database = (() => {
 })()
 
 if (process.env.NODE_ENV === 'production') {
-    const Database = require('@replit/database')
-    database = new Database()
+    database = new Database(process.env.REPLIT_DB_URL)
 }
 
-module.exports = {
-    database
-}
+export { database }
