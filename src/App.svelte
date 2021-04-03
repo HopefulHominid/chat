@@ -41,6 +41,11 @@
         die()
     }
 
+    const kick = id => {
+        console.log(id)
+        socket.emit('kick', id)
+    }
+
     // TODO: listen for connect and disconnect events to set some variable to true/false?
     const attachEvents = () => {
         socket.on('session', ({ privateID, ...hackSession }) => {
@@ -59,6 +64,11 @@
             nickname = session.username
 
             session.visible = true
+        })
+
+        socket.on('ded', id => {
+            delete sessions[id]
+            sessions = sessions
         })
 
         socket.on('sessions', sessions => sessions.forEach(saveSession))
@@ -226,7 +236,7 @@
     />
     <button on:click={updateNickname}>Update Nickname</button>
     <ul>
-        {#each [session, ...Object.values(sessions)] as { publicID, username, typing, visible }}
+        {#each [session, ...Object.entries(sessions).map(([publicID, session]) => ({ publicID, ...session }))] as { publicID, username, typing, visible } (publicID)}
             <li>
                 {visible ? '🟢' : '⚫'}
                 {username}
@@ -243,6 +253,7 @@
                         >{'Challenge'}</button
                     > -->
                 {/if}
+                <button on:click={() => kick(publicID)}>Kick</button>
                 {typing ? '⌨️ typing...' : ''}
             </li>
         {/each}
@@ -251,7 +262,6 @@
     {#if challenge}
         <h1>{challenge}, let's go!</h1>
     {/if}
-    <button on:click={nuke}>Reset Database</button>
 </main>
 
 <style lang="scss">

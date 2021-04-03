@@ -87,6 +87,14 @@ io.on('connection', async socket => {
     //     socket.to(id).emit('challenge accept', socket.id)
     // })
 
+    socket.on('kick', async id => {
+        await sessionStore.forget(id)
+        // WARN: we should be handling some of this logic
+        //       on the kick sender's side ?
+        io.in(id).emit('die')
+        io.emit('ded', id)
+    })
+
     socket.on('chat message', message => {
         socket.broadcast.emit('chat message', message)
     })
