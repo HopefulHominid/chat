@@ -74,7 +74,7 @@
             add_to_messages(msg)
         })
 
-        socket.on('die', () => socket.close())
+        socket.on('die', die)
 
         // socket.on('challenge', id => {
         //     sockets[socket.id].from.push(id)
@@ -187,10 +187,14 @@
         window.scrollTo(0, document.body.scrollHeight)
     }
 
-    const nuke = () => {
-        socket.emit('nuke')
+    const die = () => {
         socket.close()
         location.reload()
+    }
+
+    const nuke = () => {
+        socket.emit('nuke')
+        die
     }
 </script>
 
