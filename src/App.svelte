@@ -31,6 +31,16 @@
 
     const wait = ms => new Promise(resolve => setTimeout(resolve, ms))
 
+    const die = () => {
+        socket.close()
+        location.reload()
+    }
+
+    const nuke = () => {
+        socket.emit('nuke')
+        die()
+    }
+
     // TODO: listen for connect and disconnect events to set some variable to true/false?
     const attachEvents = () => {
         socket.on('session', ({ privateID, ...hackSession }) => {
@@ -185,16 +195,6 @@
         messages = [...messages, msg]
         await tick()
         window.scrollTo(0, document.body.scrollHeight)
-    }
-
-    const die = () => {
-        socket.close()
-        location.reload()
-    }
-
-    const nuke = () => {
-        socket.emit('nuke')
-        die
     }
 </script>
 
