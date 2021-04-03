@@ -13,7 +13,7 @@
 
     setContext('global', {
         getSocket: () => socket,
-        getSession: () => session,
+        getSession: () => selfSession,
         uglyUpdate
     })
 
@@ -25,10 +25,10 @@
     })
 
     // why does session in particular default to an obj ?
-    let session = {}
+    let selfSession = {}
     let sessions = {}
     $: allSessions = [
-        session,
+        selfSession,
         ...Object.entries(sessions).map(([publicID, session]) => ({
             publicID,
             ...session
@@ -36,40 +36,33 @@
     ]
 
     let unread = false
-    $: if (session.visible) unread = false
+    $: if (selfSession.visible) unread = false
     $: faviconType = unread ? 'message' : 'resting'
     socket.on('chat message', () => {
-        if (!session.visible) unread = true
+        if (!selfSession.visible) unread = true
     })
 
     const updateVisible = () => {
         const visible = document.visibilityState === 'visible'
         socket.emit('visible', visible)
-        session.visible = visible
+        selfSession.visible = visible
     }
     document.addEventListener('visibilitychange', updateVisible)
 
     const saveSession = ({ publicID, ...session }) =>
         (sessions[publicID] = session)
 
-    socket.on('session', ({ privateID, ...hackSession }) => {
+    socket.on('init', ({ privateID, sessions, ...session }) => {
         socket.auth = { privateID }
-
         localStorage.setItem('privateID', privateID)
-
-        session = hackSession
-
+        selfSession = session
+        sessions.forEach(saveSession)
         updateVisible()
     })
 
-    socket.on('sessions', sessions => sessions.forEach(saveSession))
-
-    socket.on('user connected', newSession => {
-        if (newSession.publicID === session.publicID) {
-            console.log('o wow, we connected from somewhere else')
-        } else {
-            saveSession(newSession)
-        }
+    socket.on('user connected', session => {
+        // make sure we're not connecting from elsewhere
+        if (session.publicID !== selfSession.publicID) saveSession(session)
     })
 
     socket.on('ded', id => {
@@ -97,7 +90,7 @@
 
 <main>
     <Chat />
-    <UsernameInput username={session.username} />
+    <UsernameInput username={selfSession.username} />
     <SessionList list={allSessions} />
 </main>
 

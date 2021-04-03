@@ -51,16 +51,11 @@ const onConnection = async (socket, io) => {
         console.log('server event:', event, args)
     })
 
-    // NOTE: does this need to be split into two ? kind of does the same
-    //       thing: initting ...
-    socket.emit(
-        'sessions',
-        (await sessionStore.findAllSessions()).filter(
-            ({ publicID }) => publicID !== socket.session.publicID
-        )
-    )
-    socket.emit('session', {
+    socket.emit('init', {
         privateID: socket.privateID,
+        sessions: (await sessionStore.findAllSessions()).filter(
+            ({ publicID }) => publicID !== socket.session.publicID
+        ),
         ...socket.session
     })
 
