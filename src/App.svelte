@@ -74,6 +74,8 @@
             add_to_messages(msg)
         })
 
+        socket.on('die', () => socket.close())
+
         // socket.on('challenge', id => {
         //     sockets[socket.id].from.push(id)
         //     // have to do reactive update b/c we use push
@@ -187,6 +189,7 @@
 
     const nuke = () => {
         socket.emit('nuke')
+        socket.close()
     }
 </script>
 

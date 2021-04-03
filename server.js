@@ -91,7 +91,11 @@ io.on('connection', async socket => {
         socket.broadcast.emit('chat message', message)
     })
 
-    socket.on('nuke', () => sessionStore.destroy())
+    socket.on('nuke', async () => {
+        await sessionStore.destroy()
+
+        socket.broadcast.emit('die')
+    })
 
     socket.on('visible', visible => {
         socket.session.visible = visible
