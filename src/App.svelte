@@ -1,9 +1,15 @@
 <script>
     import { io } from 'socket.io-client'
-    import { tick } from 'svelte'
+    import { setContext, tick } from 'svelte'
+    import SessionList from './components/SessionList.svelte'
 
     // import Game from './Game.svelte'
     // const rps = ['🤚', '🤜', '✌️']
+
+    setContext('key', {
+        getSocket: () => socket,
+        getSession: () => session
+    })
 
     const socket = io({ autoConnect: false })
     socket.auth = { privateID: localStorage.getItem('privateID') }
@@ -14,6 +20,14 @@
 
     let session = {}
     let sessions = {}
+
+    $: allSessions = [
+        session,
+        ...Object.entries(sessions).map(([publicID, session]) => ({
+            publicID,
+            ...session
+        }))
+    ]
 
     let message = 'your message here'
     let nickname
@@ -27,11 +41,6 @@
     const die = () => {
         socket.close()
         location.reload()
-    }
-
-    const kick = id => {
-        console.log(id)
-        socket.emit('kick', id)
     }
 
     // TODO: listen for connect and disconnect events to set some variable to true/false?
@@ -83,13 +92,6 @@
         })
 
         socket.on('die', die)
-
-        // socket.on('challenge', id => {
-        //     sockets[socket.id].from.push(id)
-        //     // have to do reactive update b/c we use push
-        //     sockets = sockets
-        // })
-        // socket.on('challenge accept', id => (challenge = id))
     }
 
     attachEvents()
@@ -99,22 +101,6 @@
         socket.emit('visible', visibleNew)
         session.visible = visibleNew
         visible = visibleNew
-    }
-
-    let challenge = null
-
-    const issueChallenge = id => {
-        // socket.emit('challenge', id)
-        // sockets[socket.id].to.push(id)
-        // sockets[id].from.push(socket.id)
-        // // have to force sockets update if we gon do push here
-        // sockets = sockets
-    }
-
-    const acceptChallenge = id => {
-        // socket.emit('challenge accept', id)
-        // sockets[id].challenge = true
-        // challenge = id
     }
 
     const sendMessage = () => {
@@ -168,9 +154,11 @@
     }
 
     const messageKeydown = e => {
+        // WARN: kinda complex behavior, maybe we should avoid
         if (e.key === 'Enter') {
-            if (e.ctrlKey) {
+            if (e.ctrlKey || e.altKey) {
                 message += '\n'
+            } else if (e.shiftKey) {
             } else {
                 sendMessage()
                 e.preventDefault()
@@ -218,35 +206,7 @@
         on:keydown={nicknameKeydown}
     />
     <button on:click={updateNickname}>Update Nickname</button>
-    <ul>
-        {#each [session, ...Object.entries(sessions).map(
-                ([publicID, session]) => ({ publicID, ...session })
-            )] as { publicID, username, typing, visible } (publicID)}
-            <li>
-                {visible ? '🟢' : '⚫'}
-                {username}
-                {#if publicID === session.publicID}
-                    {'(you)'}
-                    <!-- {:else if sockets[socket.id].from.includes(id)}
-                    <button on:click={() => acceptChallenge(id)}
-                        >{'Accept'}</button
-                    >
-                {:else if sockets[socket.id].to.includes(id)}
-                    <button disabled>{'waiting for response...'}</button>
-                {:else}
-                    <button on:click={() => issueChallenge(id)}
-                        >{'Challenge'}</button
-                    > -->
-                {/if}
-                <button on:click={() => kick(publicID)}>Kick</button>
-                {typing ? '⌨️ typing...' : ''}
-            </li>
-        {/each}
-    </ul>
-    <!-- <Game player={socket.id} /> -->
-    {#if challenge}
-        <h1>{challenge}, let's go!</h1>
-    {/if}
+    <SessionList list={allSessions} />
 </main>
 
 <style lang="scss">
@@ -263,6 +223,6 @@
     main {
         width: 100%;
 
-        // text-align: center;
+        text-align: center;
     }
 </style>
