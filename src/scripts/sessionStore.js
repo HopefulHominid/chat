@@ -7,7 +7,9 @@ const sessionStore = {
     destroy: async () => await database.empty(),
     forget: async publicID => {
         const all = await database.getAll()
-        const found = Object.entries(all).find(([privateID, session]) => session.publicID === publicID)
+        const found = Object.entries(all).find(
+            ([privateID, session]) => session.publicID === publicID
+        )
         if (found) await database.delete(found[0])
     }
 }

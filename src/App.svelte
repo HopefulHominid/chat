@@ -236,7 +236,9 @@
     />
     <button on:click={updateNickname}>Update Nickname</button>
     <ul>
-        {#each [session, ...Object.entries(sessions).map(([publicID, session]) => ({ publicID, ...session }))] as { publicID, username, typing, visible } (publicID)}
+        {#each [session, ...Object.entries(sessions).map(
+                ([publicID, session]) => ({ publicID, ...session })
+            )] as { publicID, username, typing, visible } (publicID)}
             <li>
                 {visible ? '🟢' : '⚫'}
                 {username}
