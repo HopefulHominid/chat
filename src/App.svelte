@@ -2,6 +2,7 @@
     import { io } from 'socket.io-client'
     import { setContext, tick } from 'svelte'
     import SessionList from './components/SessionList.svelte'
+    import MessageList from './components/MessageList.svelte'
 
     // import Game from './Game.svelte'
     // const rps = ['🤚', '🤜', '✌️']
@@ -113,9 +114,11 @@
 
             const richMessage = {
                 timestamp: formatter.format(Date.now()),
-                username: nickname,
-                id: session.publicID,
-                message
+                message,
+                session: {
+                    id: session.publicID,
+                    username: nickname,
+                }
             }
 
             socket.emit('chat message', richMessage)
@@ -184,14 +187,7 @@
 </svelte:head>
 
 <main>
-    <ul>
-        {#each messages as { timestamp, username, message, id }, i}
-            <li title={timestamp}>
-                {messages[i - 1]?.id === id ? '' : `${username}:`}
-                <pre>{message}</pre>
-            </li>
-        {/each}
-    </ul>
+    <MessageList {messages} />
     <textarea
         autocomplete="off"
         spellcheck="false"
@@ -223,6 +219,6 @@
     main {
         width: 100%;
 
-        text-align: center;
+        // text-align: center;
     }
 </style>
