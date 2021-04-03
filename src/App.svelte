@@ -2,7 +2,7 @@
     import { io } from 'socket.io-client'
     import { setContext, tick } from 'svelte'
     import SessionList from './components/SessionList.svelte'
-    import MessageList from './components/MessageList.svelte'
+    import Chat from './components/Chat.svelte'
 
     // import Game from './Game.svelte'
     // const rps = ['🤚', '🤜', '✌️']
@@ -30,7 +30,6 @@
         }))
     ]
 
-    let message = 'your message here'
     let nickname
     let visible
 
@@ -78,8 +77,8 @@
                 saveSession(newSession)
             }
         })
-        //
-        //
+        // fuck you
+        // prettier
         ;['visible', 'username', 'typing'].forEach(event =>
             socket.on(
                 event,
@@ -89,7 +88,9 @@
 
         socket.on('chat message', msg => {
             if (!visible) unread = true
-            add_to_messages(msg)
+
+            // WARN
+            // add_to_messages(msg)
         })
 
         socket.on('die', die)
@@ -104,30 +105,6 @@
         visible = visibleNew
     }
 
-    const sendMessage = () => {
-        if (message) {
-            const formatter = new Intl.DateTimeFormat('en', {
-                dateStyle: 'long',
-                timeStyle: 'medium',
-                calendar: 'japanese'
-            })
-
-            const richMessage = {
-                timestamp: formatter.format(Date.now()),
-                message,
-                session: {
-                    id: session.publicID,
-                    username: nickname,
-                }
-            }
-
-            socket.emit('chat message', richMessage)
-            add_to_messages(richMessage)
-            typingStop()
-            message = ''
-        }
-    }
-
     const updateNickname = () => {
         if (nickname) {
             socket.emit('username', nickname)
@@ -139,46 +116,8 @@
 
     $: faviconType = unread ? 'message' : 'resting'
 
-    let typing = false
-    // WARN: weird pattern
-    $: session.typing = typing
-
-    let delay = 2000
-    let hook
-
-    const typingStart = () => {
-        !typing ? socket.emit('typing', (typing = true)) : clearTimeout(hook)
-        hook = setTimeout(typingStop, delay)
-    }
-
-    const typingStop = () => {
-        socket.emit('typing', (typing = false))
-        clearTimeout(hook)
-    }
-
-    const messageKeydown = e => {
-        // WARN: kinda complex behavior, maybe we should avoid
-        if (e.key === 'Enter') {
-            if (e.ctrlKey || e.altKey) {
-                message += '\n'
-            } else if (e.shiftKey) {
-            } else {
-                sendMessage()
-                e.preventDefault()
-            }
-        }
-    }
-
     const nicknameKeydown = ({ key }) => {
         if (key === 'Enter') updateNickname()
-    }
-
-    let messages = []
-
-    const add_to_messages = async msg => {
-        messages = [...messages, msg]
-        await tick()
-        window.scrollTo(0, document.body.scrollHeight)
     }
 </script>
 
@@ -187,15 +126,7 @@
 </svelte:head>
 
 <main>
-    <MessageList {messages} />
-    <textarea
-        autocomplete="off"
-        spellcheck="false"
-        bind:value={message}
-        on:keydown={messageKeydown}
-        on:input={typingStart}
-    />
-    <button on:click={sendMessage}>Send Message</button>
+    <Chat />
     <input
         autocomplete="off"
         bind:value={nickname}
@@ -211,7 +142,6 @@
 
     main,
     input,
-    textarea,
     button {
         font-size: 30px;
     }

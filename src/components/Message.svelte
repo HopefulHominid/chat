@@ -2,7 +2,7 @@
     // import { getContext } from 'svelte'
 
     export let message
-    export let first
+    export let showUsername
 
     const {
         timestamp,
@@ -14,6 +14,6 @@
 </script>
 
 <li title={timestamp}>
-    {first ? '' : `${username}:`}
+    {showUsername ? `${username}:` : ''}
     <pre>{text}</pre>
 </li>
