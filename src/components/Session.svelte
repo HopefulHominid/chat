@@ -3,14 +3,15 @@
 
     export let session
 
-    const { getSession, getSocket } = getContext('key')
+    const { getSession, getSocket } = getContext('global')
+    const socket = getSocket()
 
     let { publicID, typing, username, visible } = session
 
     const self = publicID === getSession().publicID
 
     const kick = id => {
-        getSocket().emit('kick', id)
+        socket.emit('kick', id)
     }
 </script>
 

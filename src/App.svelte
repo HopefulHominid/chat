@@ -1,15 +1,20 @@
 <script>
     import { io } from 'socket.io-client'
-    import { setContext, tick } from 'svelte'
+    import { setContext, onMount } from 'svelte'
     import SessionList from './components/SessionList.svelte'
+    import UsernameInput from './components/UsernameInput.svelte'
     import Chat from './components/Chat.svelte'
 
     // import Game from './Game.svelte'
     // const rps = ['🤚', '🤜', '✌️']
 
-    setContext('key', {
+    // stores might solve this
+    const uglyUpdate = () => (allSessions = allSessions)
+
+    setContext('global', {
         getSocket: () => socket,
-        getSession: () => session
+        getSession: () => session,
+        uglyUpdate
     })
 
     const socket = io({ autoConnect: false })
@@ -19,9 +24,9 @@
         console.log('client event:', event, args)
     })
 
+    // why does session in particular default to an obj ?
     let session = {}
     let sessions = {}
-
     $: allSessions = [
         session,
         ...Object.entries(sessions).map(([publicID, session]) => ({
@@ -30,95 +35,60 @@
         }))
     ]
 
-    let nickname
-    let visible
+    let unread = false
+    $: if (session.visible) unread = false
+    $: faviconType = unread ? 'message' : 'resting'
+    socket.on('chat message', () => {
+        if (!session.visible) unread = true
+    })
 
-    $: if (visible) unread = false
+    const updateVisible = () => {
+        const visible = document.visibilityState === 'visible'
+        socket.emit('visible', visible)
+        session.visible = visible
+    }
+    document.addEventListener('visibilitychange', updateVisible)
 
     const saveSession = ({ publicID, ...session }) =>
         (sessions[publicID] = session)
 
-    const die = () => {
+    socket.on('session', ({ privateID, ...hackSession }) => {
+        socket.auth = { privateID }
+
+        localStorage.setItem('privateID', privateID)
+
+        session = hackSession
+
+        updateVisible()
+    })
+
+    socket.on('sessions', sessions => sessions.forEach(saveSession))
+
+    socket.on('user connected', newSession => {
+        if (newSession.publicID === session.publicID) {
+            console.log('o wow, we connected from somewhere else')
+        } else {
+            saveSession(newSession)
+        }
+    })
+
+    socket.on('ded', id => {
+        delete sessions[id]
+        uglyUpdate()
+    })
+
+    socket.on('die', () => {
         socket.close()
         location.reload()
-    }
+    })
 
-    // TODO: listen for connect and disconnect events to set some variable to true/false?
-    const attachEvents = () => {
-        socket.on('session', ({ privateID, ...hackSession }) => {
-            // WARN: so weird that this code has to be in here.
-            //       but if we don't put it in here there's some race
-            //       condition where we lose the first update on refresh
-            updateVisible()
-            document.addEventListener('visibilitychange', updateVisible)
-
-            socket.auth = { privateID }
-
-            localStorage.setItem('privateID', privateID)
-
-            session = hackSession
-
-            nickname = session.username
-
-            session.visible = true
-        })
-
-        socket.on('ded', id => {
-            delete sessions[id]
-            sessions = sessions
-        })
-
-        socket.on('sessions', sessions => sessions.forEach(saveSession))
-
-        socket.on('user connected', newSession => {
-            if (newSession.publicID === session.publicID) {
-                console.log('o wow, we connected from somewhere else')
-            } else {
-                saveSession(newSession)
-            }
-        })
-        // fuck you
-        // prettier
-        ;['visible', 'username', 'typing'].forEach(event =>
-            socket.on(
-                event,
-                session => (sessions[session.id][event] = session[event])
-            )
+    // prettier barrier
+    ;['visible', 'username', 'typing'].forEach(event =>
+        socket.on(
+            event,
+            session => (sessions[session.id][event] = session[event])
         )
-
-        socket.on('chat message', msg => {
-            if (!visible) unread = true
-
-            // WARN
-            // add_to_messages(msg)
-        })
-
-        socket.on('die', die)
-    }
-
-    attachEvents()
-
-    const updateVisible = () => {
-        const visibleNew = document.visibilityState === 'visible'
-        socket.emit('visible', visibleNew)
-        session.visible = visibleNew
-        visible = visibleNew
-    }
-
-    const updateNickname = () => {
-        if (nickname) {
-            socket.emit('username', nickname)
-            session.username = nickname
-        }
-    }
-
-    let unread = false
-
-    $: faviconType = unread ? 'message' : 'resting'
-
-    const nicknameKeydown = ({ key }) => {
-        if (key === 'Enter') updateNickname()
-    }
+    )
 </script>
 
 <svelte:head>
@@ -127,12 +97,7 @@
 
 <main>
     <Chat />
-    <input
-        autocomplete="off"
-        bind:value={nickname}
-        on:keydown={nicknameKeydown}
-    />
-    <button on:click={updateNickname}>Update Nickname</button>
+    <UsernameInput username={session.username} />
     <SessionList list={allSessions} />
 </main>
 
@@ -140,14 +105,9 @@
     @use './style/global.scss';
     @use './style/mixins.scss' as *;
 
-    main,
-    input,
-    button {
-        font-size: 30px;
-    }
-
     main {
         width: 100%;
+        font-size: 30px;
 
         // text-align: center;
     }

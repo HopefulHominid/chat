@@ -3,8 +3,7 @@
     import MessageList from './MessageList.svelte'
     import { timestamp } from '../scripts/utils.js'
 
-    const { getSession, getSocket } = getContext('key')
-
+    const { getSession, getSocket } = getContext('global')
     const socket = getSocket()
 
     let message = 'your message here'
@@ -64,6 +63,11 @@
         await tick()
         window.scrollTo(0, document.body.scrollHeight)
     }
+
+    // NOTE: don't like this... or should i like it? socket is part of the
+    //       context after all... we're basically making socket global in
+    //       a subtree... idk man
+    socket.on('chat message', addMessage)
 </script>
 
 <MessageList {messages} />
