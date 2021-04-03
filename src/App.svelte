@@ -184,6 +184,10 @@
         await tick()
         window.scrollTo(0, document.body.scrollHeight)
     }
+
+    const nuke = () => {
+        socket.emit('nuke')
+    }
 </script>
 
 <svelte:head>
@@ -239,6 +243,7 @@
     {#if challenge}
         <h1>{challenge}, let's go!</h1>
     {/if}
+    <button on:click={nuke}>Reset Database</button>
 </main>
 
 <style lang="scss">
