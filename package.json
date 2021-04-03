@@ -4,7 +4,7 @@
     },
     "type": "module",
     "scripts": {
-        "dev": "export NODE_ENV=development && vite && node server.js",
+        "dev": "export NODE_ENV=development && vite build && node server.js",
         "start": "export NODE_ENV=production && vite build && node server.js"
     },
     "dependencies": {

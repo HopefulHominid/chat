@@ -13,13 +13,10 @@
     })
 
     let session = {}
-
     let sessions = {}
 
     let message = 'your message here'
-
     let nickname
-
     let visible
 
     $: if (visible) unread = false
@@ -27,18 +24,9 @@
     const saveSession = ({ publicID, ...session }) =>
         (sessions[publicID] = session)
 
-    const magic = Math.random()
-
-    const wait = ms => new Promise(resolve => setTimeout(resolve, ms))
-
     const die = () => {
         socket.close()
         location.reload()
-    }
-
-    const nuke = () => {
-        socket.emit('nuke')
-        die()
     }
 
     const kick = id => {
@@ -163,20 +151,15 @@
     $: faviconType = unread ? 'message' : 'resting'
 
     let typing = false
-
+    // WARN: weird pattern
     $: session.typing = typing
 
     let delay = 2000
     let hook
 
     const typingStart = () => {
-        if (!typing) {
-            socket.emit('typing', (typing = true))
-            hook = setTimeout(typingStop, delay)
-        } else {
-            clearTimeout(hook)
-            hook = setTimeout(typingStop, delay)
-        }
+        !typing ? socket.emit('typing', (typing = true)) : clearTimeout(hook)
+        hook = setTimeout(typingStop, delay)
     }
 
     const typingStop = () => {

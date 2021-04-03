@@ -5,11 +5,12 @@ import { Database } from './replit.js'
 let database = (() => {
     // NOTE: we use a map to mimic the repl.it database's string keys
     const database = {}
-    // WARN: should we be serializing?
     return {
         get: key => Promise.resolve(key in database ? database[key] : null),
+        // WARN: should we be serializing?
         set: (key, value) => Promise.resolve((database[key] = value)),
-        getAll: () => Promise.resolve(database)
+        getAll: () => Promise.resolve(database),
+        delete: key => Promise.resolve(delete database[key])
     }
 })()
 
