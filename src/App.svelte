@@ -190,6 +190,7 @@
     const nuke = () => {
         socket.emit('nuke')
         socket.close()
+        location.reload()
     }
 </script>
 
