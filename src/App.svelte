@@ -1,12 +1,12 @@
 <script>
     import { io } from 'socket.io-client'
-    import { setContext, onMount } from 'svelte'
+    import { setContext } from 'svelte'
+    import { style } from './scripts/utils.js'
+    import { centerChat } from './scripts/settings.js'
     import SessionList from './components/SessionList.svelte'
     import UsernameInput from './components/UsernameInput.svelte'
     import Chat from './components/Chat.svelte'
-
-    // import Game from './Game.svelte'
-    // const rps = ['🤚', '🤜', '✌️']
+    import Settings from './components/Settings.svelte'
 
     // stores might solve this
     const uglyUpdate = () => (allSessions = allSessions)
@@ -88,7 +88,8 @@
     <link rel="icon" href="/{faviconType}.ico" />
 </svelte:head>
 
-<main>
+<main use:style={{ '--text-align': $centerChat ? 'center' : 'initial' }}>
+    <Settings />
     <Chat />
     <UsernameInput username={selfSession.username} />
     <SessionList list={allSessions} />
@@ -100,8 +101,8 @@
 
     main {
         width: 100%;
-        font-size: 30px;
+        font-size: 30px !important;
 
-        // text-align: center;
+        text-align: var(--text-align);
     }
 </style>

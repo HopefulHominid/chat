@@ -1,5 +1,6 @@
 <script>
     import { getContext } from 'svelte'
+    import { showKickButton } from '../scripts/settings'
 
     export let session
 
@@ -19,7 +20,9 @@
     {visible ? '🟢' : '⚫'}
     {username}
     {#if self} {'(you)'} {/if}
-    <button on:click={() => kick(publicID)}>Kick</button>
+    {#if $showKickButton}
+        <button on:click={() => kick(publicID)}>Kick</button>
+    {/if}
     {typing ? '⌨️ typing...' : ''}
 </li>
 

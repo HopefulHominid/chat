@@ -1,18 +1,18 @@
 <script>
-    import { range, style } from './scripts/utils.js'
+    import { range, style } from '../scripts/utils.js'
 
-    export let player
+    // const rps = ['🤚', '🤜', '✌️']
+
+    // export let player
 
     let playerIndex = 0
 
     const makeSquare = i => ({ name: `t${i}`, value: '' })
 
     let squares = range(9).map(makeSquare)
-
-    const players = []
 </script>
 
-<p>{players[playerIndex].id === player ? 'move!' : 'waiting ...'}</p>
+<!-- <p>{players[playerIndex].id === player ? 'move!' : 'waiting ...'}</p> -->
 
 <div id="grid">
     {#each squares as { name, value }}
