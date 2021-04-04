@@ -33,7 +33,7 @@
             publicID,
             ...session
         }))
-    ]
+    ].filter(({ connected }) => connected)
 
     let unread = false
     $: if (selfSession.visible) unread = false

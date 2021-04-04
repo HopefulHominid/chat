@@ -2,26 +2,39 @@ import { sessionStore } from './sessionStore.js'
 import { Server } from 'socket.io'
 import crypto from 'crypto'
 
+const saveSession = async ({ privateID, session }) =>
+    sessionStore.saveSession(privateID, session)
+
+const makePropertyUpdater = (socket, prop) => {
+    return value => {
+        socket.session[prop] = value
+        saveSession(socket)
+
+        socket.broadcast.emit(prop, {
+            [prop]: value,
+            id: socket.session.publicID
+        })
+    }
+}
+
 const setupListeners = (socket, io) => {
-    const listeners = {
+    const propertyListeners = Object.fromEntries(
+        ['visible', 'username'].map(prop => [
+            prop,
+            makePropertyUpdater(socket, prop)
+        ])
+    )
+
+    const customListeners = {
         kick: async id => {
             await sessionStore.forget(id)
             // WARN: we should be handling some of this logic
             //       on the kick sender's side ?
             io.in(id).emit('die')
-            io.emit('ded', id)
+            socket.broadcast.emit('ded', id)
         },
         'chat message': message => {
             socket.broadcast.emit('chat message', message)
-        },
-        visible: visible => {
-            socket.session.visible = visible
-            sessionStore.saveSession(socket.privateID, socket.session)
-
-            socket.broadcast.emit('visible', {
-                visible,
-                id: socket.session.publicID
-            })
         },
         typing: typing => {
             socket.broadcast.emit('typing', {
@@ -29,17 +42,14 @@ const setupListeners = (socket, io) => {
                 typing
             })
         },
-        username: username => {
-            socket.session.username = username
-
-            sessionStore.saveSession(socket.privateID, socket.session)
-
-            socket.broadcast.emit('username', {
-                username,
-                id: socket.session.publicID
-            })
+        disconnect: _reason => {
+            socket.session.connected = false
+            saveSession(socket)
+            socket.broadcast.emit('ded', socket.session.publicID)
         }
     }
+
+    const listeners = { ...customListeners, ...propertyListeners }
 
     for (const [event, handler] of Object.entries(listeners)) {
         socket.on(event, handler)
@@ -77,7 +87,10 @@ const setupSession = async (socket, next) => {
         if (session) {
             // WARN: DRY senses tingling, idk how to fix (1/2)
             socket.privateID = privateID
-            socket.session = session
+            socket.session = {
+                ...session,
+                connected: true
+            }
             return next()
         } else {
             // TODO: sorry we can't seem to find that user 😬
@@ -88,14 +101,15 @@ const setupSession = async (socket, next) => {
 
     const session = {
         publicID: randomID(),
-        username: 'anonymous'
+        username: 'anonymous',
+        connected: true
     }
-
-    sessionStore.saveSession(privateID, session)
 
     // WARN: DRY senses tingling, idk how to fix (2/2)
     socket.privateID = privateID
     socket.session = session
+
+    saveSession(socket)
 
     next()
 }
