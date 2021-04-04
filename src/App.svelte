@@ -65,12 +65,12 @@
         if (session.publicID !== selfSession.publicID) saveSession(session)
     })
 
-    socket.on('ded', id => {
+    socket.on('forget session', id => {
         delete sessions[id]
         uglyUpdate()
     })
 
-    socket.on('die', () => {
+    socket.on('kill yourself', () => {
         socket.close()
         location.reload()
     })

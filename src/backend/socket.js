@@ -30,8 +30,8 @@ const setupListeners = (socket, io) => {
             await sessionStore.forget(id)
             // WARN: we should be handling some of this logic
             //       on the kick sender's side ?
-            io.in(id).emit('die')
-            socket.broadcast.emit('ded', id)
+            io.in(id).emit('kill yourself')
+            socket.broadcast.emit('forget session', id)
         },
         'chat message': message => {
             socket.broadcast.emit('chat message', message)
@@ -45,7 +45,7 @@ const setupListeners = (socket, io) => {
         disconnect: _reason => {
             socket.session.connected = false
             saveSession(socket)
-            socket.broadcast.emit('ded', socket.session.publicID)
+            socket.broadcast.emit('forget session', socket.session.publicID)
         }
     }
 
