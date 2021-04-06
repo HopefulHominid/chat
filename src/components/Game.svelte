@@ -90,8 +90,8 @@
 
     const img = new Image()
     img.src = 'sprite.png'
-    img.onload = ({ path: [img] }) => {
-        magic(img)
+    img.onload = () => {
+        // magic(img)
         // WarN: what if this gets called
         //       before ctx is initted
         gameLoop()
