@@ -6,6 +6,7 @@
     import SessionList from './components/SessionList.svelte'
     import UsernameInput from './components/UsernameInput.svelte'
     import Chat from './components/Chat.svelte'
+    import Game from './components/Game.svelte'
     import Settings from './components/Settings.svelte'
 
     // stores might solve this
@@ -93,6 +94,7 @@
     <Chat />
     <UsernameInput username={selfSession.username} />
     <SessionList list={allSessions} />
+    <Game />
 </main>
 
 <style lang="scss">

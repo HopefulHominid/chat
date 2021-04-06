@@ -1,47 +1,134 @@
 <script>
-    import { range, style } from '../scripts/utils.js'
+    import { onMount, tick } from 'svelte'
+    import { current_component } from 'svelte/internal'
 
-    // const rps = ['🤚', '🤜', '✌️']
+    let canvas
 
-    // export let player
+    let width, height
 
-    let playerIndex = 0
+    const redraw = async () => {
+        if (ctx) {
+            await tick()
+            draw()
+        }
+    }
 
-    const makeSquare = i => ({ name: `t${i}`, value: '' })
+    const keys = {}
 
-    let squares = range(9).map(makeSquare)
+    $: redraw(width, height)
+
+    let ctx
+
+    let coords = { x: 0, y: 0 }
+
+    const speed = 3
+
+    const idk = {}
+
+    const order = [
+        ['down', 'left'],
+        ['down', null],
+        ['down', 'right'],
+        [null, 'left'],
+        [null, 'right'],
+        ['up', 'left'],
+        ['up', null],
+        ['up', 'right']
+    ]
+
+    let vertical = 'down'
+    let horizontal = null
+
+    let frame = 0
+
+    $: direction = [vertical, horizontal]
+
+    let click = 0
+    let ticks = 7
+
+    const gameLoop = () => {
+        ctx.clearRect(0, 0, canvas.width, canvas.height)
+
+        let hasMoved = false
+
+        if (keys.w) {
+            coords.y -= speed
+            vertical = 'up'
+            hasMoved = true
+        } else if (keys.s) {
+            coords.y += speed
+            vertical = 'down'
+            hasMoved = true
+        } else {
+            vertical = null
+        }
+        if (keys.a) {
+            coords.x -= speed
+            horizontal = 'left'
+            hasMoved = true
+        } else if (keys.d) {
+            coords.x += speed
+            horizontal = 'right'
+            hasMoved = true
+        } else {
+            horizontal = null
+        }
+
+        if (hasMoved) {
+            click++
+            if (click > ticks) {
+                click = 0
+                frame = (frame + 1) % 8
+            }
+        }
+
+        draw()
+        requestAnimationFrame(gameLoop)
+    }
+
+    const magic = img => {}
+
+    const img = new Image()
+    img.src = 'sprite.png'
+    img.onload = ({ path: [img] }) => {
+        magic(img)
+        // WarN: what if this gets called
+        //       before ctx is initted
+        gameLoop()
+    }
+
+    onMount(() => {
+        ctx = canvas.getContext('2d')
+    })
+
+    const draw = () => {
+        const { x, y } = coords
+        const test = ([v, h]) => v === direction[0] && h === direction[1]
+        const row = Math.abs(order.findIndex(test))
+        const col = frame
+        ctx.drawImage(img, col * 60, row * 110, 60, 110, x, y, 60, 110)
+    }
+
+    const setKey = (key, value) => (keys[key] = value)
+    const keydown = ({ key }) => setKey(key, true)
+    const keyup = ({ key }) => setKey(key, false)
 </script>
 
-<!-- <p>{players[playerIndex].id === player ? 'move!' : 'waiting ...'}</p> -->
+<svelte:window
+    bind:innerHeight={height}
+    bind:innerWidth={width}
+    on:keydown={keydown}
+    on:keyup={keyup}
+/>
 
-<div id="grid">
-    {#each squares as { name, value }}
-        <div class="square" use:style={{ 'grid-area': name }}>{value}</div>
-    {/each}
-</div>
+<canvas bind:this={canvas} {width} {height} />
 
 <style lang="scss">
     @use '../style/mixins.scss' as *;
 
-    #grid {
-        background-color: blue;
-        display: grid;
-        gap: 1vmin;
-        height: 200px;
-        width: 200px;
-        grid-template-rows: 0 repeat(3, minmax(0, 1fr)) 0;
-        grid-template-columns: 0 repeat(3, minmax(0, 1fr)) 0;
-        grid-template-areas:
-            '. .  .  .  .'
-            '. t0 t1 t2 .'
-            '. t3 t4 t5 .'
-            '. t6 t7 t8 .'
-            '. .  .  .  .';
-    }
-
-    .square {
-        background-color: red;
-        @include center;
-        font-size: 10px;
+    canvas {
+        top: 0;
+        left: 0;
+        position: fixed;
     }
 </style>
