@@ -94,7 +94,7 @@
     <Chat />
     <UsernameInput username={selfSession.username} />
     <SessionList list={allSessions} />
-    <Game />
+    <Game list={allSessions}/>
 </main>
 
 <style lang="scss">

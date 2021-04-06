@@ -46,6 +46,12 @@ const setupListeners = (socket, io) => {
             socket.session.connected = false
             saveSession(socket)
             socket.broadcast.emit('forget session', socket.session.publicID)
+        },
+        move: move => {
+            socket.broadcast.emit('move', {
+                id: socket.session.publicID,
+                move
+            })
         }
     }
 

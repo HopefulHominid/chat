@@ -1,6 +1,10 @@
 <script>
-    import { onMount, tick } from 'svelte'
-    import { current_component } from 'svelte/internal'
+    import { onMount, tick, getContext } from 'svelte'
+
+    const { getSocket } = getContext('global')
+    const socket = getSocket()
+
+    // export let list
 
     let canvas
 
@@ -9,7 +13,7 @@
     const redraw = async () => {
         if (ctx) {
             await tick()
-            draw()
+            draw(img)
         }
     }
 
@@ -22,8 +26,6 @@
     let coords = { x: 0, y: 0 }
 
     const speed = 3
-
-    const idk = {}
 
     const order = [
         ['down', 'left'],
@@ -45,6 +47,23 @@
 
     let click = 0
     let ticks = 7
+
+    $: socket.emit('move', {
+        coords,
+        direction,
+        frame
+    })
+
+    const sessions = {}
+
+    socket.on('move', ({ id, move }) => {
+        if (!(id in sessions)) {
+            const img = new Image()
+            img.src = 'sprite.png'
+            sessions[id] = { img, move }
+        }
+        sessions[id].move = move
+    })
 
     const gameLoop = () => {
         ctx.clearRect(0, 0, canvas.width, canvas.height)
@@ -82,11 +101,12 @@
             }
         }
 
-        draw()
+        draw(img, { coords, direction, frame })
+        for (const session in sessions) {
+            draw(sessions[session].img, sessions[session].move)
+        }
         requestAnimationFrame(gameLoop)
     }
-
-    const magic = img => {}
 
     const img = new Image()
     img.src = 'sprite.png'
@@ -101,11 +121,12 @@
         ctx = canvas.getContext('2d')
     })
 
-    const draw = () => {
+    const draw = (img, { coords, direction, frame }) => {
         const { x, y } = coords
         const test = ([v, h]) => v === direction[0] && h === direction[1]
         const row = Math.abs(order.findIndex(test))
         const col = frame
+        // console.log(x, y, row, col)
         ctx.drawImage(img, col * 60, row * 110, 60, 110, x, y, 60, 110)
     }
 
