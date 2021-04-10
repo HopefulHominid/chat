@@ -2,7 +2,7 @@
     import { io } from 'socket.io-client'
     import { setContext } from 'svelte'
     import { style } from './scripts/utils.js'
-    import { centerChat } from './scripts/settings.js'
+    import { centerChat, textColor } from './scripts/settings.js'
     import SessionList from './components/SessionList.svelte'
     import UsernameInput from './components/UsernameInput.svelte'
     import Chat from './components/Chat.svelte'
@@ -89,7 +89,12 @@
     <link rel="icon" href="/{faviconType}.ico" />
 </svelte:head>
 
-<main use:style={{ '--text-align': $centerChat ? 'center' : 'initial' }}>
+<main
+    use:style={{
+        '--text-align': $centerChat ? 'center' : 'initial',
+        '--color': $textColor
+    }}
+>
     <Settings />
     <Chat />
     <UsernameInput username={selfSession.username} />
@@ -105,6 +110,7 @@
         width: 100%;
         font-size: 30px;
 
+        color: var(--color);
         text-align: var(--text-align);
     }
 </style>

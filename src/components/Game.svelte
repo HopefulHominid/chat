@@ -8,16 +8,7 @@
 
     let width, height
 
-    const redraw = async () => {
-        if (ctx) {
-            await tick()
-            draw(img, { coords, direction, frame })
-        }
-    }
-
     const keys = {}
-
-    $: redraw(width, height)
 
     let ctx
 
