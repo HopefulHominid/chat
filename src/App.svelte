@@ -10,7 +10,7 @@
     import Settings from './components/Settings.svelte'
 
     // stores might solve this
-    const uglyUpdate = () => (allSessions = allSessions)
+    const uglyUpdate = () => (allConnectedSessions = allConnectedSessions)
 
     setContext('global', {
         getSocket: () => socket,
@@ -28,7 +28,7 @@
     // why does session in particular default to an obj ?
     let selfSession = {}
     let sessions = {}
-    $: allSessions = [
+    $: allConnectedSessions = [
         selfSession,
         ...Object.entries(sessions).map(([publicID, session]) => ({
             publicID,
@@ -93,8 +93,8 @@
     <Settings />
     <Chat />
     <UsernameInput username={selfSession.username} />
-    <SessionList list={allSessions} />
-    <Game list={allSessions}/>
+    <SessionList list={allConnectedSessions} />
+    <Game />
 </main>
 
 <style lang="scss">
@@ -103,7 +103,7 @@
 
     main {
         width: 100%;
-        font-size: 30px !important;
+        font-size: 30px;
 
         text-align: var(--text-align);
     }

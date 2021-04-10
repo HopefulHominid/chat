@@ -4,8 +4,6 @@
     const { getSocket } = getContext('global')
     const socket = getSocket()
 
-    // export let list
-
     let canvas
 
     let width, height
@@ -13,7 +11,7 @@
     const redraw = async () => {
         if (ctx) {
             await tick()
-            draw(img)
+            draw(img, { coords, direction, frame })
         }
     }
 
