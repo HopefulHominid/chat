@@ -16,8 +16,8 @@ setupSocketIO(http)
 
 app.use(express.static(__dirname + '/dist'))
 
-app.get('/og/*', (req, res, next) => {
-    const url = decodeURIComponent(req.path.slice(4))
+app.get('/og', (req, res) => {
+    const url = decodeURIComponent(req.query.dest)
 
     fetch(url)
         .then(res => res.text())

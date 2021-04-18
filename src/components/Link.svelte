@@ -9,7 +9,7 @@
     let doneSpinner = false
     $: done = doneFetch && doneSpinner
 
-    fetch(location.href + 'og/' + encodeURIComponent(url))
+    fetch(location.href + 'og/?dest=' + encodeURIComponent(url))
         .then(res => res.json())
         .then(juice => (title = juice?.html?.title))
         .catch(console.error)
