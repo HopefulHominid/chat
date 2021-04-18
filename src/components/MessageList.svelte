@@ -19,7 +19,7 @@
 </script>
 
 <ul>
-    {#each messages as message, i (messages)}
+    {#each messages as message, i (message)}
         <Message {message} showUsername={showUsername(i)} />
     {/each}
 </ul>

@@ -24,3 +24,5 @@ export const style = (node, styles = {}) => {
     update(styles)
     return { update }
 }
+
+export const wait = ms => new Promise(resolve => setTimeout(resolve, ms))

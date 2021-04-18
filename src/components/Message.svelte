@@ -1,4 +1,6 @@
 <script>
+    import Link from './Link.svelte'
+
     export let message
     export let showUsername
 
@@ -7,9 +9,24 @@
         message: text,
         session: { username }
     } = message
+
+    let url
+
+    try {
+        url = new URL(text)
+    } catch (e) {
+        if (!(e instanceof TypeError)) throw e
+    }
 </script>
 
+{#if showUsername}
+    <li>{username}:</li>
+{/if}
+
 <li title={timestamp}>
-    {showUsername ? `${username}:` : ''}
-    <pre>{text}</pre>
+    {#if url}
+        <Link {url} />
+    {:else}
+        <pre>{text}</pre>
+    {/if}
 </li>
