@@ -1,5 +1,5 @@
 <script>
-    import { onMount, tick, getContext } from 'svelte'
+    import { onMount, getContext } from 'svelte'
 
     const { getSocket } = getContext('global')
     const socket = getSocket()
