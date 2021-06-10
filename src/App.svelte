@@ -9,7 +9,7 @@
     import Game from './components/Game.svelte'
     import Settings from './components/Settings.svelte'
 
-    // stores might solve this
+    // TODO: stores might solve this
     const uglyUpdate = () => (allConnectedSessions = allConnectedSessions)
 
     setContext('global', {
@@ -18,14 +18,18 @@
         uglyUpdate
     })
 
+    // autoConnect false to give us a chance to setup auth object ...
     const socket = io({ autoConnect: false })
     socket.auth = { privateID: localStorage.getItem('privateID') }
+    // ... then manually connect afterwards
     socket.connect()
+
     socket.onAny((event, ...args) => {
         console.log('client event:', event, args)
     })
 
     // why does session in particular default to an obj ?
+    // TODO: is the above comment relevant anymore ?
     let selfSession = {}
     let sessions = {}
     $: allConnectedSessions = [
@@ -53,11 +57,23 @@
     const saveSession = ({ publicID, ...session }) =>
         (sessions[publicID] = session)
 
-    socket.on('init', ({ privateID, sessions, ...session }) => {
+    socket.on('init', ({ privateID, sessions, session }) => {
+        // TODO: kinda redundant... maybe. leave comment justifying later
         socket.auth = { privateID }
         localStorage.setItem('privateID', privateID)
+
+        for (const prop in session) {
+            console.log(prop)
+        }
+        console.log(session)
+
         selfSession = session
         sessions.forEach(saveSession)
+        
+        // NOTE: need this bc sometimes we miss the initial
+        //       visibilitychange event... (or maybe no event fires) 
+        //       don't know under exactly what conditions this happens...
+        //       learn more
         updateVisible()
     })
 
@@ -66,7 +82,7 @@
         if (session.publicID !== selfSession.publicID) saveSession(session)
     })
 
-    socket.on('forget session', id => {
+    socket.on('user disconnected', id => {
         delete sessions[id]
         uglyUpdate()
     })

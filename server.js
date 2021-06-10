@@ -16,6 +16,7 @@ setupSocketIO(http)
 
 app.use(express.static(__dirname + '/dist'))
 
+// TODO: extract to file
 app.get('/og', (req, res) => {
     const url = decodeURIComponent(req.query.dest)
 

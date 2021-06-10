@@ -4,7 +4,6 @@ const sessionStore = {
     findSession: async privateID => await database.get(privateID),
     saveSession: async (key, value) => await database.set(key, value),
     findAllSessions: async () => Object.values(await database.getAll()),
-    destroy: async () => await database.empty(),
     forget: async publicID => {
         const all = await database.getAll()
         const found = Object.entries(all).find(

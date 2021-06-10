@@ -2,10 +2,12 @@ import { sessionStore } from './sessionStore.js'
 import { Server } from 'socket.io'
 import crypto from 'crypto'
 
-const saveSession = async ({ privateID, session }) =>
+const saveSession = async ({ privateID, session }) => {
     sessionStore.saveSession(privateID, session)
+    console.log(JSON.stringify(session, null, 2))
+}
 
-const makePropertyUpdater = (socket, prop) => {
+const makePropertyListener = (socket, prop) => {
     return value => {
         socket.session[prop] = value
         saveSession(socket)
@@ -18,10 +20,12 @@ const makePropertyUpdater = (socket, prop) => {
 }
 
 const setupListeners = (socket, io) => {
+    // WARN: do we rly need to save visible to the database ? I think not
+    //       we should have some kind of last seen stamp instead
     const propertyListeners = Object.fromEntries(
         ['visible', 'username'].map(prop => [
             prop,
-            makePropertyUpdater(socket, prop)
+            makePropertyListener(socket, prop)
         ])
     )
 
@@ -30,8 +34,10 @@ const setupListeners = (socket, io) => {
             await sessionStore.forget(id)
             // WARN: we should be handling some of this logic
             //       on the kick sender's side ?
+            // WARN: shouldn't we be using .to here ? so we don't need
+            //       rooms... see the cheat sheet and think more about this
             io.in(id).emit('kill yourself')
-            socket.broadcast.emit('forget session', id)
+            socket.broadcast.emit('user disconnected', id)
         },
         'chat message': message => {
             socket.broadcast.emit('chat message', message)
@@ -43,9 +49,24 @@ const setupListeners = (socket, io) => {
             })
         },
         disconnect: _reason => {
+            // WARN: big problem here. connected = false saved to database,
+            //       but when we read it back on reconnection, we manually
+            //       override w/ connected = true w/o saving. currently
+            //       relying on the visibility update triggered by client
+            //       on initial load to trigger save, thus fixing the
+            //       connection state as well. very bad code. pretty sure
+            //       we don't even need to store connected and visible
+            //       in the database anyway, just a lazy artifact of me
+            //       wanting to get something working earlier.
+            // TODO: also, pretty sure, we don't even need to track connected
+            //       at all... still not rly sure that we need both connected
+            //       and visible given 1. we don't show connected only visible
+            //       and 2. we use events only to communicate con and discon...
+            //       FIX THIS!
             socket.session.connected = false
             saveSession(socket)
-            socket.broadcast.emit('forget session', socket.session.publicID)
+
+            socket.broadcast.emit('user disconnected', socket.session.publicID)
         },
         move: move => {
             socket.broadcast.emit('move', {
@@ -72,9 +93,11 @@ const onConnection = async (socket, io) => {
         sessions: (await sessionStore.findAllSessions()).filter(
             ({ publicID }) => publicID !== socket.session.publicID
         ),
-        ...socket.session
+        session: socket.session
     })
 
+    // TODO: we only use this bc of some quirk (? or is it normal ?)
+    //       in the kick handler... figure this out
     socket.join(socket.session.publicID)
 
     socket.broadcast.emit('user connected', socket.session)
@@ -95,6 +118,7 @@ const setupSession = async (socket, next) => {
             socket.privateID = privateID
             socket.session = {
                 ...session,
+                // whatever the stored connection was, override with true
                 connected: true
             }
             return next()
@@ -114,7 +138,7 @@ const setupSession = async (socket, next) => {
     // WARN: DRY senses tingling, idk how to fix (2/2)
     socket.privateID = privateID
     socket.session = session
-
+    
     saveSession(socket)
 
     next()
