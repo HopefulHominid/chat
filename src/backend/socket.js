@@ -2,15 +2,21 @@ import { sessionStore } from './sessionStore.js'
 import { Server } from 'socket.io'
 import crypto from 'crypto'
 
-const saveSession = async ({ privateID, session }) => {
+// WARN: kinda weird signature... maybe just make it two-place for better
+//       readability
+// TODO: yeah, do this
+const saveSocket = async ({ privateID, session }) => {
     sessionStore.saveSession(privateID, session)
-    console.log(JSON.stringify(session, null, 2))
+    // TODO: get rid of this eventually
+    // console.log(JSON.stringify(session, null, 2))
 }
 
 const makePropertyListener = (socket, prop) => {
     return value => {
         socket.session[prop] = value
-        saveSession(socket)
+        // TODO: make this so it doesn't store visible in database anymore!
+        //       we don't need to do this! (i think... review rest of code)
+        saveSocket(socket)
 
         socket.broadcast.emit(prop, {
             [prop]: value,
@@ -49,6 +55,10 @@ const setupListeners = (socket, io) => {
             })
         },
         disconnect: _reason => {
+            // TODO: "We need to update our “disconnect” handler, because the
+            //       session can now be shared across tabs" - DO THIS
+            //       and think of other cross-tab bugs we have (e.g., username
+            //       updating)
             // WARN: big problem here. connected = false saved to database,
             //       but when we read it back on reconnection, we manually
             //       override w/ connected = true w/o saving. currently
@@ -63,8 +73,9 @@ const setupListeners = (socket, io) => {
             //       and visible given 1. we don't show connected only visible
             //       and 2. we use events only to communicate con and discon...
             //       FIX THIS!
-            socket.session.connected = false
-            saveSession(socket)
+            // NOTE: we don't need either of these two lines anymore, methinks
+            // socket.session.connected = false
+            // saveSocket(socket)
 
             socket.broadcast.emit('user disconnected', socket.session.publicID)
         },
@@ -90,14 +101,20 @@ const onConnection = async (socket, io) => {
 
     socket.emit('init', {
         privateID: socket.privateID,
-        sessions: (await sessionStore.findAllSessions()).filter(
-            ({ publicID }) => publicID !== socket.session.publicID
-        ),
+        sessions: (await sessionStore.findAllSessions())
+            .filter(({ publicID }) => publicID !== socket.session.publicID)
+            .map(session => ({
+                ...session,
+                // NOTE: this is why we don't have to store connected in db.
+                //       we can just ask socket: "is this person here rn ?"
+                connected: io.sockets.adapter.rooms.has(session.publicID)
+            })),
         session: socket.session
     })
 
     // TODO: we only use this bc of some quirk (? or is it normal ?)
     //       in the kick handler... figure this out
+    //       also helps manage multi-tab single users right ?
     socket.join(socket.session.publicID)
 
     socket.broadcast.emit('user connected', socket.session)
@@ -105,6 +122,8 @@ const onConnection = async (socket, io) => {
     setupListeners(socket, io)
 }
 
+// WARN: we're not doing anything to prevent collisions in Firebase collection...
+//        what would happen on a collision ? probably disaster....
 const randomID = () => crypto.randomBytes(8).toString('hex')
 
 const setupSession = async (socket, next) => {
@@ -118,7 +137,6 @@ const setupSession = async (socket, next) => {
             socket.privateID = privateID
             socket.session = {
                 ...session,
-                // whatever the stored connection was, override with true
                 connected: true
             }
             return next()
@@ -131,15 +149,27 @@ const setupSession = async (socket, next) => {
 
     const session = {
         publicID: randomID(),
+        // anony🐭 ?
         username: 'anonymous',
         connected: true
     }
 
     // WARN: DRY senses tingling, idk how to fix (2/2)
+    // WARN: might be bad practice to be adding all these things to the socket...
+    //       a lot of collision opportunities... how else to do it ? global var
+    //       in this file maybe ? guy said you could "You can attach any attribute"
+    //       in part 1 of the tut, but x to doubt that it's good practice
+    // WARN: yeah this feels like a rly bad idea there's like 1e6 props on socket
+    // NOTE: but the benefit of this is that these properties are visible when we do
+    //       io.of("/").sockets ... hmmm ....
+    // WARN: also idk about the philosophical decision to not store privateID as part
+    //       of the session, but some extra, floating value. kind of confusing. e.g.,
+    //       findAllSessions doesn't return the privateID for anyone... is that wut
+    //       we want ?
     socket.privateID = privateID
     socket.session = session
-    
-    saveSession(socket)
+
+    saveSocket(socket)
 
     next()
 }

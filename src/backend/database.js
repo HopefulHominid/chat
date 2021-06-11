@@ -1,7 +1,15 @@
 // Firebase App (the core Firebase SDK) is always required and must be listed first
 import { initializeApp } from 'firebase/app'
 
-import { getFirestore, collection, addDoc, getDocs } from 'firebase/firestore'
+import {
+    getFirestore,
+    collection,
+    addDoc,
+    getDocs,
+    updateDoc,
+    doc,
+    setDoc
+} from 'firebase/firestore'
 
 // do we need to store the return value? cross that bridge?
 initializeApp({
@@ -38,6 +46,20 @@ const test = async () => {
         console.error('Error adding document: ', e)
     }
 }
+
+const test2 = async () => {
+    try {
+        await setDoc(
+            doc(db, 'users', 'BRUH'),
+            { nanis: 'jpg' },
+            { merge: true }
+        )
+    } catch (e) {
+        console.error('Error waah', e)
+    }
+}
+
+// test2()
 
 // NOTE: default to in-memory database if we're not in production
 let database = (() => {

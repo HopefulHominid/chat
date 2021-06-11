@@ -1,6 +1,8 @@
 import { database } from './database.js'
 
 const sessionStore = {
+    // given a privateID, finds the user document in the users collection
+    // with that id
     findSession: async privateID => await database.get(privateID),
     saveSession: async (key, value) => await database.set(key, value),
     findAllSessions: async () => Object.values(await database.getAll()),

@@ -32,6 +32,10 @@
     // TODO: is the above comment relevant anymore ?
     let selfSession = {}
     let sessions = {}
+    // WARN: a hairy little factory... needed to combine weirdly structured
+    //       data... find a way to store more consistently ?
+    // TODO: check on how much this is updating.... make sure svelte updates
+    //       aren't going haywire in the background
     $: allConnectedSessions = [
         selfSession,
         ...Object.entries(sessions).map(([publicID, session]) => ({
@@ -59,31 +63,34 @@
 
     socket.on('init', ({ privateID, sessions, session }) => {
         // TODO: kinda redundant... maybe. leave comment justifying later
+        //       y do we do this. check the tut maybe
+        //       // attach the session ID to the next reconnection attempts
+        //       was his comment.... ponder this for a while
         socket.auth = { privateID }
         localStorage.setItem('privateID', privateID)
 
-        for (const prop in session) {
-            console.log(prop)
-        }
-        console.log(session)
-
         selfSession = session
         sessions.forEach(saveSession)
-        
-        // NOTE: need this bc sometimes we miss the initial
-        //       visibilitychange event... (or maybe no event fires) 
-        //       don't know under exactly what conditions this happens...
-        //       learn more
+
+        // NOTE: need this bc visibilitychange doesn't fire on initial page load
+        //       and we don't know if the tab is visible or hidden (e.g.,
+        //       opened via pinned tab in background or Ctrl click link)
         updateVisible()
     })
 
     socket.on('user connected', session => {
+        // NOTE: we could also just update .connected if we already have them...
+        //       don't think it matter tho ... ?
+        //       yeah it's redundant to send connected: true over the network,
+        //       this very event firing indicates that it must be true... but
+        //       who cares ? ... i care...
         // make sure we're not connecting from elsewhere
         if (session.publicID !== selfSession.publicID) saveSession(session)
     })
 
     socket.on('user disconnected', id => {
-        delete sessions[id]
+        sessions[id].connected = false
+        // TODO: do we need this anymore ?
         uglyUpdate()
     })
 
