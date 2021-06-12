@@ -103,12 +103,18 @@
     socket.on('visible', session => {
         // NOTE: we want to ignore visible changes that are broadcast from our
         //       own additional tabs
+        // NOTE: another solution would be to somehow avoid broadcasting to our
+        //       own sockets... not sure how to do this ? would have to manually
+        //       loop over sockets and emit individually ? or create a room called
+        //       not-session-X for each session and have everyone else join that
+        //       kind of yucky, we'll go with this for now but I don't love
+        //       broadcasting messages I know we're going to ignore
         if (session.id !== selfSession.publicID) {
             sessions[session.id]['visible'] = session['visible']
         }
     })
 
-    // prettier barrier
+    // prettier barrier - the cost of no semicolons
     ;['username', 'typing'].forEach(event =>
         socket.on(event, session => {
             sessions[session.id][event] = session[event]

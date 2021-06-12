@@ -9,31 +9,49 @@ const saveSocket = async ({ privateID, session }) => {
     sessionStore.saveSession(privateID, session)
 }
 
-const makePropertyListener = (socket, prop) => {
-    return value => {
-        socket.session[prop] = value
-        // TODO: make this so it doesn't store visible in database anymore!
-        //       we don't need to do this! (i think... review rest of code)
-        saveSocket(socket)
-
-        // TODO: this emits visible change to our own session's sockets...
-        //       not right
-        socket.broadcast.emit(prop, {
-            [prop]: value,
-            id: socket.session.publicID
-        })
-    }
-}
-
 const setupListeners = (socket, io) => {
-    // WARN: do we rly need to save visible to the database ? I think not
-    //       we should have some kind of last seen stamp instead
-    const propertyListeners = Object.fromEntries(
-        ['visible', 'username'].map(prop => [
-            prop,
-            makePropertyListener(socket, prop)
-        ])
-    )
+    const propertyListeners = {
+        visible: async value => {
+            socket.session.visible = value
+
+            // NOTE: I wish there was an easier way to ask socket.io: "yo give
+            //       me all the sockets in this room." but this is the best i
+            //       came up with for now
+            let visible = false
+            const socketsInSession = await io
+                .in(socket.session.publicID)
+                .allSockets()
+            for (const socketID of socketsInSession) {
+                // NOTE: again, this line feels so hairy to me. why socket.io why ?
+                const socket = io.sockets.sockets.get(socketID)
+                if (socket.session.visible) {
+                    visible = true
+                    break
+                }
+            }
+
+            // NOTE: this broadcasts messages to our own session's sockets. I
+            //       don't know an elegant way to avoid this. see comment on
+            //       client side visible event handler as well
+            socket.broadcast.emit('visible', {
+                visible,
+                id: socket.session.publicID
+            })
+        },
+        username: value => {
+            socket.session.username = value
+            // TODO: make this so it doesn't store visible in database anymore!
+            //       we don't need to do this! (i think... review rest of code)
+            saveSocket(socket)
+
+            // TODO: this emits visible change to our own session's sockets...
+            //       not right
+            socket.broadcast.emit('username', {
+                username: value,
+                id: socket.session.publicID
+            })
+        }
+    }
 
     const customListeners = {
         kick: async id => {
@@ -97,6 +115,7 @@ const onConnection = async (socket, io) => {
                 ...session,
                 // NOTE: this is why we don't have to store connected in db.
                 //       we can just ask socket: "is this person here rn ?"
+                // NOTE: list all rooms, then check if there is a room w/ our id
                 connected: io.sockets.adapter.rooms.has(session.publicID)
             })),
         session: socket.session
