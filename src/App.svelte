@@ -100,8 +100,16 @@
         location.reload()
     })
 
+    socket.on('visible', session => {
+        // NOTE: we want to ignore visible changes that are broadcast from our
+        //       own additional tabs
+        if (session.id !== selfSession.publicID) {
+            sessions[session.id]['visible'] = session['visible']
+        }
+    })
+
     // prettier barrier
-    ;['visible', 'username', 'typing'].forEach(event =>
+    ;['username', 'typing'].forEach(event =>
         socket.on(event, session => {
             sessions[session.id][event] = session[event]
         })

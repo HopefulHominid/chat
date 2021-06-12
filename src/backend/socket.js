@@ -7,8 +7,6 @@ import crypto from 'crypto'
 // TODO: yeah, do this
 const saveSocket = async ({ privateID, session }) => {
     sessionStore.saveSession(privateID, session)
-    // TODO: get rid of this eventually
-    // console.log(JSON.stringify(session, null, 2))
 }
 
 const makePropertyListener = (socket, prop) => {
@@ -57,30 +55,9 @@ const setupListeners = (socket, io) => {
             })
         },
         disconnect: async _reason => {
-            // TODO: "We need to update our “disconnect” handler, because the
-            //       session can now be shared across tabs" - DO THIS
-            //       and think of other cross-tab bugs we have (e.g., username
-            //       updating)
-            // WARN: big problem here. connected = false saved to database,
-            //       but when we read it back on reconnection, we manually
-            //       override w/ connected = true w/o saving. currently
-            //       relying on the visibility update triggered by client
-            //       on initial load to trigger save, thus fixing the
-            //       connection state as well. very bad code. pretty sure
-            //       we don't even need to store connected and visible
-            //       in the database anyway, just a lazy artifact of me
-            //       wanting to get something working earlier.
-            // TODO: also, pretty sure, we don't even need to track connected
-            //       at all... still not rly sure that we need both connected
-            //       and visible given 1. we don't show connected only visible
-            //       and 2. we use events only to communicate con and discon...
-            //       FIX THIS!
-            // NOTE: we don't need either of these two lines anymore, methinks
-            // socket.session.connected = false
-            // saveSocket(socket)
-
             // NOTE: why not use io.in(blah).sockets ? different signature, not
             //       async... why are there two !!??! maybe ping developer ?
+            //       he uses this in part 2 of the tut, but why ?
             const matchingSockets = await io
                 .in(socket.session.publicID)
                 .allSockets()
