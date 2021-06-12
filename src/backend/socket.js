@@ -18,6 +18,8 @@ const makePropertyListener = (socket, prop) => {
         //       we don't need to do this! (i think... review rest of code)
         saveSocket(socket)
 
+        // TODO: this emits visible change to our own session's sockets...
+        //       not right
         socket.broadcast.emit(prop, {
             [prop]: value,
             id: socket.session.publicID
@@ -54,7 +56,7 @@ const setupListeners = (socket, io) => {
                 typing
             })
         },
-        disconnect: _reason => {
+        disconnect: async _reason => {
             // TODO: "We need to update our “disconnect” handler, because the
             //       session can now be shared across tabs" - DO THIS
             //       and think of other cross-tab bugs we have (e.g., username
@@ -77,7 +79,18 @@ const setupListeners = (socket, io) => {
             // socket.session.connected = false
             // saveSocket(socket)
 
-            socket.broadcast.emit('user disconnected', socket.session.publicID)
+            // NOTE: why not use io.in(blah).sockets ? different signature, not
+            //       async... why are there two !!??! maybe ping developer ?
+            const matchingSockets = await io
+                .in(socket.session.publicID)
+                .allSockets()
+            const isDisconnected = matchingSockets.size === 0
+            if (isDisconnected) {
+                socket.broadcast.emit(
+                    'user disconnected',
+                    socket.session.publicID
+                )
+            }
         },
         move: move => {
             socket.broadcast.emit('move', {
@@ -117,6 +130,9 @@ const onConnection = async (socket, io) => {
     //       also helps manage multi-tab single users right ?
     socket.join(socket.session.publicID)
 
+    // TODO: maybe we only want to broadcast this if it's a new user...
+    //       otherwise we're overwriting the session we already have
+    //       race condition here w/ visible update triggered by 'init' ?
     socket.broadcast.emit('user connected', socket.session)
 
     setupListeners(socket, io)
@@ -139,6 +155,8 @@ const setupSession = async (socket, next) => {
                 ...session,
                 connected: true
             }
+            // TODO: next() vs return next() ? look at express to make 100% sure
+            //       this is kosher
             return next()
         } else {
             // TODO: sorry we can't seem to find that user 😬

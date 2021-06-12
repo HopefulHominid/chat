@@ -86,6 +86,7 @@
         //       who cares ? ... i care...
         // make sure we're not connecting from elsewhere
         if (session.publicID !== selfSession.publicID) saveSession(session)
+        console.log('overwrote session!')
     })
 
     socket.on('user disconnected', id => {
@@ -101,10 +102,9 @@
 
     // prettier barrier
     ;['visible', 'username', 'typing'].forEach(event =>
-        socket.on(
-            event,
-            session => (sessions[session.id][event] = session[event])
-        )
+        socket.on(event, session => {
+            sessions[session.id][event] = session[event]
+        })
     )
 </script>
 
