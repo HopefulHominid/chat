@@ -67,11 +67,17 @@ let database = (() => {
     //       the repl.it database's string keys
     const database = {}
     return {
-        get: key => Promise.resolve(key in database ? database[key] : null),
+        get: key =>
+            Promise.resolve(key in database ? JSON.parse(database[key]) : null),
         // WARN: should we be serializing?
-        set: (key, value) => Promise.resolve((database[key] = value)),
-        getAll: () => Promise.resolve(database),
-        delete: key => Promise.resolve(delete database[key])
+        set: (key, value) =>
+            Promise.resolve((database[key] = JSON.stringify(value))),
+        getAll: () => {
+            const decoded = {}
+            for (const key in database) decoded[key] = JSON.parse(database[key])
+            return Promise.resolve(decoded)
+        },
+        // delete: key => Promise.resolve(delete database[key])
     }
 })()
 

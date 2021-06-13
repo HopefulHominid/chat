@@ -9,38 +9,42 @@ const saveSocket = async ({ privateID, session }) => {
     sessionStore.saveSession(privateID, session)
 }
 
+// NOTE: now we have to remember to await this bc it uses an async method! GROSS!
+const isSessionVisible = async (id, io) => {
+    // NOTE: I wish there was an easier way to ask socket.io: "yo give
+    //       me all the sockets in this room." but this is the best i
+    //       came up with for now
+    // TODO: maybe could extract to .getRoomSockets or some such...
+    const socketsInSession = await io.in(id).allSockets()
+    for (const socketID of socketsInSession) {
+        // NOTE: again, this line feels so hairy to me. why socket.io why ?
+        //       but this is the official way. probably bc in the tut
+        //       io.of('/').sockets appeared less hairy, given .sockets is
+        //       alias for .of('/')
+        const socket = io.sockets.sockets.get(socketID)
+        if (socket.session.visible) return true
+    }
+    return false
+}
+
 const setupListeners = (socket, io) => {
     const propertyListeners = {
+        // TODO: there's the possibility that we
+        //       tell everyone over and over again that we're visible, bc
+        //       we keep opening new tabs in the background... what's the
+        //       answer here ? not too big a problem for now but bruh. i h8
+        //       unnecessary event emissions
         visible: async value => {
             // NOTE: we save visible to the session here only so that we can
             //       check all of a session's sockets for visibility
-            //       (like 2 lines down from here)
+            //       in the isSessionVisible function ... is this the best way ?
             socket.session.visible = value
-
-            // NOTE: I wish there was an easier way to ask socket.io: "yo give
-            //       me all the sockets in this room." but this is the best i
-            //       came up with for now
-            let visible = false
-            const socketsInSession = await io
-                .in(socket.session.publicID)
-                .allSockets()
-            for (const socketID of socketsInSession) {
-                // NOTE: again, this line feels so hairy to me. why socket.io why ?
-                //       but this is the official way. probably bc in the tut
-                //       io.of('/').sockets appeared less hairy, given .sockets is
-                //       alias for .of('/')
-                const socket = io.sockets.sockets.get(socketID)
-                if (socket.session.visible) {
-                    visible = true
-                    break
-                }
-            }
 
             // NOTE: this broadcasts messages to our own session's sockets. I
             //       don't know an elegant way to avoid this. see comment on
             //       client side visible event handler as well
             socket.broadcast.emit('visible', {
-                visible,
+                visible: await isSessionVisible(socket.session.publicID, io),
                 id: socket.session.publicID
             })
         },
@@ -84,11 +88,10 @@ const setupListeners = (socket, io) => {
             // NOTE: why not use io.in(blah).sockets ? different signature, not
             //       async... why are there two !!??! maybe ping developer ?
             //       he uses this in part 2 of the tut, but why ?
-            const matchingSockets = await io
+            const socketsInSession = await io
                 .in(socket.session.publicID)
                 .allSockets()
-            const isDisconnected = matchingSockets.size === 0
-            if (isDisconnected) {
+            if (socketsInSession.size === 0) {
                 socket.broadcast.emit(
                     'user disconnected',
                     socket.session.publicID
@@ -133,28 +136,43 @@ const onConnection = async (socket, io) => {
     //       visible and tries a few more times before ignoring. or all clients have
     //       to send back msg confirming they got the new user before we let them
     //       have visible. for now, just hoping that this isn't a big problem
+    // NOTE: emit w/ acknowledgement on client side ??? look into this!!!
     // NOTE: avoid sending unnecessary visible prop... we should be handling this
     //       elsewhere, and sending more data than we need here can hide bugs
-    // TODO: maybe we only want to broadcast this if it's a new user...
-    //       otherwise we're overwriting the session we already have
     // TODO: this should never have visible in it anyway, so we probably don't need
     //       to do this... like that this code FORCES out visible if it is there...
-    socket.broadcast.emit('user connected', {
-        publicID: socket.session.publicID,
-        username: socket.session.username
-    })
+    // NOTE: if statement logic ensures we only receive user connected event on
+    //       client when a new session rly is connected
+    const socketsInSession = await io.in(socket.session.publicID).allSockets()
+    if (socketsInSession.size === 1) {
+        socket.broadcast.emit('user connected', {
+            publicID: socket.session.publicID,
+            username: socket.session.username
+        })
+    }
 
     socket.emit('init', {
         privateID: socket.privateID,
-        sessions: (await sessionStore.findAllSessions())
-            .filter(({ publicID }) => publicID !== socket.session.publicID)
-            .map(session => ({
-                ...session,
-                // NOTE: this is why we don't have to store connected in db.
-                //       we can just ask socket: "is this person here rn ?"
-                // NOTE: list all rooms, then check if there is a room w/ our id
-                connected: io.sockets.adapter.rooms.has(session.publicID)
-            })),
+        // TODO: this feels so disgusting...
+        // NOTE: update on who has already joined the party
+        sessions: await Promise.all(
+            (
+                await sessionStore.findAllSessions()
+            )
+                .filter(({ publicID }) => publicID !== socket.session.publicID)
+                .map(async session => ({
+                    ...session,
+                    // NOTE: this is why we don't have to store connected in db.
+                    //       we can just ask socket: "is this person here rn ?"
+                    // NOTE: list all rooms, then check if there is a room w/ our id
+                    connected: io.sockets.adapter.rooms.has(session.publicID),
+                    // TODO: would it be faster / better to store these properties
+                    //       somewhere ? looping through all the sockets every time
+                    //       (and also in the visible handler, see comment above that)
+                    //       seems kinda heavy
+                    visible: await isSessionVisible(session.publicID, io)
+                }))
+        ),
         // TODO: this shouldn't have visible in it... make sure of that later
         session: socket.session
     })
@@ -197,6 +215,8 @@ const setupSession = async (socket, next) => {
         // anony🐭 ?
         username: 'anonymous'
     }
+    // TODO: do we really need this ? I guess it couldn't hurt ...
+    if (socket.privateID === socket.session.publicID) throw Error('COLLISION!')
 
     // TODO: there should be some code that makes SURE our supposedly non-colliding ids
     //       don't actually collide, which forces this function to start over if they do
