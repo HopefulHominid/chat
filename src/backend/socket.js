@@ -1,6 +1,6 @@
 import { sessionStore } from './sessionStore.js'
 import { Server } from 'socket.io'
-import crypto from 'crypto'
+import cuid from 'cuid'
 
 // WARN: kinda weird signature... maybe just make it two-place for better
 //       readability
@@ -12,6 +12,9 @@ const saveSocket = async ({ privateID, session }) => {
 const setupListeners = (socket, io) => {
     const propertyListeners = {
         visible: async value => {
+            // NOTE: we save visible to the session here only so that we can
+            //       check all of a session's sockets for visibility
+            //       (like 2 lines down from here)
             socket.session.visible = value
 
             // NOTE: I wish there was an easier way to ask socket.io: "yo give
@@ -23,6 +26,9 @@ const setupListeners = (socket, io) => {
                 .allSockets()
             for (const socketID of socketsInSession) {
                 // NOTE: again, this line feels so hairy to me. why socket.io why ?
+                //       but this is the official way. probably bc in the tut
+                //       io.of('/').sockets appeared less hairy, given .sockets is
+                //       alias for .of('/')
                 const socket = io.sockets.sockets.get(socketID)
                 if (socket.session.visible) {
                     visible = true
@@ -38,6 +44,7 @@ const setupListeners = (socket, io) => {
                 id: socket.session.publicID
             })
         },
+        // TODO: examine this whole boi
         username: value => {
             socket.session.username = value
             // TODO: make this so it doesn't store visible in database anymore!
@@ -53,6 +60,7 @@ const setupListeners = (socket, io) => {
         }
     }
 
+    // TODO: examine all these bois besides the discon which we already fixed
     const customListeners = {
         kick: async id => {
             await sessionStore.forget(id)
@@ -107,6 +115,35 @@ const onConnection = async (socket, io) => {
         console.log('server event:', event, args)
     })
 
+    // NOTE: single room where we can see every socket that belongs to this session
+    socket.join(socket.session.publicID)
+
+    // WARN: kinda don't like passing around context like this...
+    //       better architecture ?
+    setupListeners(socket, io)
+
+    // WARN: we fire this before init, hoping that all the other sessions receive
+    //       the update and store this user in their sessions store BEFORE
+    //       we emit init. bc we expect init to trigger visibility update. if this
+    //       fails for some reason and the user is not stored in the sessions db,
+    //       then the visibility update will try to store the visible value on a
+    //       non-existent user and it will error. not sure what to do about this
+    //       case. maybe make it so client visible receiver doesn't error if
+    //       u can't find it sessions but rather silently ignores. or stores
+    //       visible and tries a few more times before ignoring. or all clients have
+    //       to send back msg confirming they got the new user before we let them
+    //       have visible. for now, just hoping that this isn't a big problem
+    // NOTE: avoid sending unnecessary visible prop... we should be handling this
+    //       elsewhere, and sending more data than we need here can hide bugs
+    // TODO: maybe we only want to broadcast this if it's a new user...
+    //       otherwise we're overwriting the session we already have
+    // TODO: this should never have visible in it anyway, so we probably don't need
+    //       to do this... like that this code FORCES out visible if it is there...
+    socket.broadcast.emit('user connected', {
+        publicID: socket.session.publicID,
+        username: socket.session.username
+    })
+
     socket.emit('init', {
         privateID: socket.privateID,
         sessions: (await sessionStore.findAllSessions())
@@ -118,25 +155,10 @@ const onConnection = async (socket, io) => {
                 // NOTE: list all rooms, then check if there is a room w/ our id
                 connected: io.sockets.adapter.rooms.has(session.publicID)
             })),
+        // TODO: this shouldn't have visible in it... make sure of that later
         session: socket.session
     })
-
-    // TODO: we only use this bc of some quirk (? or is it normal ?)
-    //       in the kick handler... figure this out
-    //       also helps manage multi-tab single users right ?
-    socket.join(socket.session.publicID)
-
-    // TODO: maybe we only want to broadcast this if it's a new user...
-    //       otherwise we're overwriting the session we already have
-    //       race condition here w/ visible update triggered by 'init' ?
-    socket.broadcast.emit('user connected', socket.session)
-
-    setupListeners(socket, io)
 }
-
-// WARN: we're not doing anything to prevent collisions in Firebase collection...
-//        what would happen on a collision ? probably disaster....
-const randomID = () => crypto.randomBytes(8).toString('hex')
 
 const setupSession = async (socket, next) => {
     let { privateID } = socket.handshake.auth
@@ -147,25 +169,13 @@ const setupSession = async (socket, next) => {
         if (session) {
             // WARN: DRY senses tingling, idk how to fix (1/2)
             socket.privateID = privateID
-            socket.session = {
-                ...session,
-                connected: true
-            }
+            socket.session = session
             // TODO: next() vs return next() ? look at express to make 100% sure
             //       this is kosher
             return next()
         } else {
             // TODO: sorry we can't seem to find that user 😬
         }
-    }
-
-    privateID = randomID()
-
-    const session = {
-        publicID: randomID(),
-        // anony🐭 ?
-        username: 'anonymous',
-        connected: true
     }
 
     // WARN: DRY senses tingling, idk how to fix (2/2)
@@ -176,13 +186,21 @@ const setupSession = async (socket, next) => {
     // WARN: yeah this feels like a rly bad idea there's like 1e6 props on socket
     // NOTE: but the benefit of this is that these properties are visible when we do
     //       io.of("/").sockets ... hmmm ....
+    //       yea i think we need this in order to do our cross-socket visibility check
     // WARN: also idk about the philosophical decision to not store privateID as part
     //       of the session, but some extra, floating value. kind of confusing. e.g.,
     //       findAllSessions doesn't return the privateID for anyone... is that wut
     //       we want ?
-    socket.privateID = privateID
-    socket.session = session
+    socket.privateID = cuid()
+    socket.session = {
+        publicID: cuid(),
+        // anony🐭 ?
+        username: 'anonymous'
+    }
 
+    // TODO: there should be some code that makes SURE our supposedly non-colliding ids
+    //       don't actually collide, which forces this function to start over if they do
+    //       what's the point of fancy cuid library if I'm just checking ids anyway ?
     saveSocket(socket)
 
     next()
@@ -191,6 +209,10 @@ const setupSession = async (socket, next) => {
 export default function setupSocketIO(http) {
     const io = new Server(http)
 
+    // TODO: why do we have this separate setup session middleware ?
+    //       why not just do everything in one function ? why does
+    //       the tut choose to do it like this ?
+    //       something to do w/ separating out authentication ? y ?
     io.use(setupSession)
 
     io.on('connection', socket => onConnection(socket, io))

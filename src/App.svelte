@@ -69,7 +69,7 @@
         socket.auth = { privateID }
         localStorage.setItem('privateID', privateID)
 
-        selfSession = session
+        selfSession = { ...session, connected: true }
         sessions.forEach(saveSession)
 
         // NOTE: need this bc visibilitychange doesn't fire on initial page load
@@ -78,15 +78,19 @@
         updateVisible()
     })
 
+    // WARN: if this function mysterious (e.g., wait()) takes 100 years to
+    //       execute... possible that we miss the first visibility update
+    //       don't rly have a good solution for this. some ideas tho. see
+    //       comment above server's user connected emit
     socket.on('user connected', session => {
-        // NOTE: we could also just update .connected if we already have them...
-        //       don't think it matter tho ... ?
-        //       yeah it's redundant to send connected: true over the network,
-        //       this very event firing indicates that it must be true... but
-        //       who cares ? ... i care...
-        // make sure we're not connecting from elsewhere
-        if (session.publicID !== selfSession.publicID) saveSession(session)
-        console.log('overwrote session!')
+        // NOTE: make sure it's not our own session's socket that sent this
+        if (session.publicID !== selfSession.publicID) {
+            saveSession({
+                ...session,
+                connected: true
+            })
+            console.log('overwrote session!')
+        }
     })
 
     socket.on('user disconnected', id => {
