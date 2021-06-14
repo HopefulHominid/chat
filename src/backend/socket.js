@@ -6,7 +6,7 @@ import cuid from 'cuid'
 //       readability
 // TODO: yeah, do this
 const saveSocket = async ({ privateID, session }) => {
-    sessionStore.saveSession(privateID, session)
+    await sessionStore.saveSession(privateID, session)
 }
 
 // NOTE: now we have to remember to await this bc it uses an async method! GROSS!
@@ -89,15 +89,10 @@ const setupListeners = (socket, io) => {
                 id: socket.session.publicID
             })
         },
-        username: value => {
-            // TODO: we could also just merge in the username value, no
-            //       need to write the ids again ...
-            saveSocket({
+        username: async value => {
+            await saveSocket({
                 privateID: socket.privateID,
-                session: {
-                    publicID: socket.session.publicID,
-                    username: value
-                }
+                session: { username: value }
             })
 
             socket.broadcast.emit('username', {
@@ -220,7 +215,7 @@ const setupSession = async (socket, next) => {
     // TODO: there should be some code that makes SURE our supposedly non-colliding ids
     //       don't actually collide, which forces this function to start over if they do
     //       what's the point of fancy cuid library if I'm just checking ids anyway ?
-    saveSocket(socket)
+    await saveSocket(socket)
 
     next()
 }
