@@ -36,33 +36,18 @@ const setupListeners = (socket, io) => {
         //       we keep opening new tabs in the background... what's the
         //       answer here ? not too big a problem for now but bruh. i h8
         //       unnecessary event emissions
+        // TODO: yeah fix this
         visible: async value => {
             // NOTE: we save visible to the session here only so that we can
             //       check all of a session's sockets for visibility
             //       in the isSessionVisible function ... is this the best way ?
             socket.session.visible = value
 
-            // NOTE: so there's two paths we could take here. one is to avoid
-            //       broadcasting to our own sockets (currently only know how
-            //       to do this by ignoring events on client side). this way we
-            //       avoid the socket.broadcast.emit problem when you switch
-            //       from one tab to another of 1. 1st tab
-            //       emit(vis, false) 2. 2nd tab quickly handles selfSession.vis =
-            //       true -> emit(vis, true) -> broads(vis, true) (which it will not
-            //       receive) 3. 2nd tab receives broad(vis, false || false) that
-            //       1st tab triggered 4. 2nd tab is not visible. so you could fix 
-            //       this by choosing to ignore broadcasts from your own sockets
-            //       entirely, letting the selfSession.visible = visibilitystate
-            //       take over and handle each individual tab. but this has the
-            //       (unlikely ?) potential downside of "what if the user can
-            //       somehow see pages w/  visibilitystate = hidden ? those
-            //       pages would show our user as a dark not visible bubble,
-            //       even tho we may be visible on another tab. so the second
-            //       option, doing it this way, allows us to cover this case.
-            //       all of our own tabs will always be updated with the
-            //       correct value of isSessionVisible
-            io.emit('visible', {
-                visible: await isSessionVisible(socket.session.publicID, io),
+            socket.broadcast.emit('visible', {
+                // NOTE: if value === true, we don't even need to do this test
+                visible:
+                    value ||
+                    (await isSessionVisible(socket.session.publicID, io)),
                 id: socket.session.publicID
             })
         },

@@ -53,27 +53,13 @@
 
     const updateVisible = () => {
         const visible = document.visibilityState === 'visible'
-        socket.emit('visible', visible)
-        // NOTE: we keep this for a *slight* speed improvement. consider the
-        //       cases. 1. going from chat tab to non-chat tab. in this case we
-        //       correctly set visible=false faster than the server can send its
-        //       visible=false||false||...||false response back. 2. going from
-        //       chat tab to chat tab. in this case the 1st tab sets visible=false
-        //       faster than usual, which is fine (?) because there is a moment
-        //       when the program is in-between tabs where no one tab is visible,
-        //       and the server will send back visible=false||...||false for just
-        //       a moment which is intended behavior anyway (as it doesn't know that
-        //       we're about to land on our own tab yet. then we do land our own
-        //       tab, and this line sets visible=true faster than the server can
-        //       send back visible=(false||false||false||true)=true. 3. going from
-        //       non-chat to chat is similar case, where this makes our visible=true
-        //       update slightly faster correctly (the non-visible tabs still have
-        //       to wait to get their visible=true update from the server, but this
-        //       is completely fine as idk if there's ever a case where the user even
-        //       is able to see visibilitystate=hidden tabs in the first place. so
-        //       overall this line doesn't change the intended behavior and offers
-        //       a slight speed boost.
+        
         selfSession.visible = visible
+
+        // NOTE: put this after so we can be sure selfSession gets updated first
+        //       why you ask ? does it matter ? who knows ? im sick of thinking
+        //       about obscure visibility bugs
+        socket.emit('visible', visible)
     }
     document.addEventListener('visibilitychange', updateVisible)
 
@@ -122,20 +108,26 @@
         location.reload()
     })
 
-    // socket.on('username', session => {
-    //     if (session.id !== selfSession.publicID) {
-    //         sessions[session.id]['username'] = session['username']
-    //     }
-    // })
-
     // prettier barrier - the cost of no semicolons
     ;['visible', 'username', 'typing'].forEach(event =>
         socket.on(event, ({ id, [event]: value }) => {
             const target =
                 id === selfSession.publicID ? selfSession : sessions[id]
-            target[event] = value
-            // NOTE: need this bc of svelty sveltyness
-            uglyUpdate()
+            // NOTE: ignore the visibility=false update that comes from going
+            //       from one in-session-chat-tab to another while the browser
+            //       is in a limbo in-between-tabs state, given we know based
+            //       on selfSession.visible that we just landed on our own tab!
+            if (
+                !(
+                    event === 'visible' &&
+                    target === selfSession &&
+                    selfSession.visible
+                )
+            ) {
+                target[event] = value
+                // NOTE: need this bc of svelty sveltyness
+                uglyUpdate()
+            }
         })
     )
 </script>
