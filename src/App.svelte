@@ -30,10 +30,13 @@
         console.log('client event:', event, args)
     })
 
-    // why does session in particular default to an obj ?
-    // TODO: is the above comment relevant anymore ?
-    let selfSession = {}
-    let sessions = {}
+    // NOTE: first real bug noticed w/ let vs const! wow! see the rest
+    //       of this commit for details. basically we were dishing out
+    //       selfSession in context, expecting to be able to keep obj
+    //       reference, but our init function was reassigning the obj!
+    //       so we fixed using const and Object.assign! cool!
+    const selfSession = {}
+    const sessions = {}
     // WARN: a hairy little factory... needed to combine weirdly structured
     //       data... find a way to store more consistently ?
     // TODO: check on how much this is updating.... make sure svelte updates
@@ -55,7 +58,7 @@
 
     const updateVisible = () => {
         const visible = document.visibilityState === 'visible'
-        
+
         selfSession.visible = visible
 
         // NOTE: put this after so we can be sure selfSession gets updated first
@@ -76,7 +79,7 @@
         socket.auth = { privateID }
         localStorage.setItem('privateID', privateID)
 
-        selfSession = { ...session, connected: true }
+        Object.assign(selfSession, { ...session, connected: true })
         sessions.forEach(saveSession)
 
         // NOTE: need this bc visibilitychange doesn't fire on initial page load

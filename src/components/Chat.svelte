@@ -3,14 +3,21 @@
     import MessageList from './MessageList.svelte'
     import { timestamp } from '../scripts/utils.js'
 
-    const { getSession, getSocket } = getContext('global')
+    const { getSession, getSocket, uglyUpdate } = getContext('global')
     const socket = getSocket()
+    const session = getSession()
 
     let message = 'your message here'
     let messages = []
     let typingEndDelay = 2 * 1e3
     let typingHook
     let typing = false
+
+    // NOTE: allows us to see our own typing... event
+    $: {
+        session.typing = typing
+        uglyUpdate()
+    }
 
     const messageKeydown = e => {
         // WARN: kinda complex behavior, maybe we should avoid
@@ -40,7 +47,7 @@
 
     const sendMessage = () => {
         if (message) {
-            const { publicID, username } = getSession()
+            const { publicID, username } = session
 
             const richMessage = {
                 timestamp: timestamp(),
