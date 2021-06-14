@@ -28,48 +28,7 @@ const isSessionVisible = async (id, io) => {
 }
 
 const setupListeners = (socket, io) => {
-    // TODO: not sure about the propertyListeners and customListeners
-    //       distinction anymore...
-    const propertyListeners = {
-        // TODO: there's the possibility that we
-        //       tell everyone over and over again that we're visible, bc
-        //       we keep opening new tabs in the background... what's the
-        //       answer here ? not too big a problem for now but bruh. i h8
-        //       unnecessary event emissions
-        // TODO: yeah fix this
-        visible: async value => {
-            // NOTE: we save visible to the session here only so that we can
-            //       check all of a session's sockets for visibility
-            //       in the isSessionVisible function ... is this the best way ?
-            socket.session.visible = value
-
-            socket.broadcast.emit('visible', {
-                // NOTE: if value === true, we don't even need to do this check
-                visible:
-                    value ||
-                    (await isSessionVisible(socket.session.publicID, io)),
-                id: socket.session.publicID
-            })
-        },
-        username: value => {
-            // TODO: we could also just merge in the username value, no
-            //       need to write the ids again ...
-            saveSocket({
-                privateID: socket.privateID,
-                session: {
-                    publicID: socket.session.publicID,
-                    username: value
-                }
-            })
-
-            socket.broadcast.emit('username', {
-                username: value,
-                id: socket.session.publicID
-            })
-        }
-    }
-
-    const customListeners = {
+    const listeners = {
         // TODO: this probably doesn't even work anymore... figure out how we
         //       would integrate w/ firebase then fix
         kick: async id => {
@@ -109,10 +68,44 @@ const setupListeners = (socket, io) => {
                 id: socket.session.publicID,
                 move
             })
+        },
+        // TODO: there's the possibility that we
+        //       tell everyone over and over again that we're visible, bc
+        //       we keep opening new tabs in the background... what's the
+        //       answer here ? not too big a problem for now but bruh. i h8
+        //       unnecessary event emissions
+        // TODO: yeah fix this
+        visible: async value => {
+            // NOTE: we save visible to the session here only so that we can
+            //       check all of a session's sockets for visibility
+            //       in the isSessionVisible function ... is this the best way ?
+            socket.session.visible = value
+
+            socket.broadcast.emit('visible', {
+                // NOTE: if value === true, we don't even need to do this check
+                visible:
+                    value ||
+                    (await isSessionVisible(socket.session.publicID, io)),
+                id: socket.session.publicID
+            })
+        },
+        username: value => {
+            // TODO: we could also just merge in the username value, no
+            //       need to write the ids again ...
+            saveSocket({
+                privateID: socket.privateID,
+                session: {
+                    publicID: socket.session.publicID,
+                    username: value
+                }
+            })
+
+            socket.broadcast.emit('username', {
+                username: value,
+                id: socket.session.publicID
+            })
         }
     }
-
-    const listeners = { ...customListeners, ...propertyListeners }
 
     for (const [event, handler] of Object.entries(listeners)) {
         socket.on(event, handler)
