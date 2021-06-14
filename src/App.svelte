@@ -54,6 +54,25 @@
     const updateVisible = () => {
         const visible = document.visibilityState === 'visible'
         socket.emit('visible', visible)
+        // NOTE: we keep this for a *slight* speed improvement. consider the
+        //       cases. 1. going from chat tab to non-chat tab. in this case we
+        //       correctly set visible=false faster than the server can send its
+        //       visible=false||false||...||false response back. 2. going from
+        //       chat tab to chat tab. in this case the 1st tab sets visible=false
+        //       faster than usual, which is fine (?) because there is a moment
+        //       when the program is in-between tabs where no one tab is visible,
+        //       and the server will send back visible=false||...||false for just
+        //       a moment which is intended behavior anyway (as it doesn't know that
+        //       we're about to land on our own tab yet. then we do land our own
+        //       tab, and this line sets visible=true faster than the server can
+        //       send back visible=(false||false||false||true)=true. 3. going from
+        //       non-chat to chat is similar case, where this makes our visible=true
+        //       update slightly faster correctly (the non-visible tabs still have
+        //       to wait to get their visible=true update from the server, but this
+        //       is completely fine as idk if there's ever a case where the user even
+        //       is able to see visibilitystate=hidden tabs in the first place. so
+        //       overall this line doesn't change the intended behavior and offers
+        //       a slight speed boost.
         selfSession.visible = visible
     }
     document.addEventListener('visibilitychange', updateVisible)
@@ -78,7 +97,7 @@
         updateVisible()
     })
 
-    // WARN: if this function mysterious (e.g., wait()) takes 100 years to
+    // WARN: if this function mysteriously (e.g., wait()) takes 100 years to
     //       execute... possible that we miss the first visibility update
     //       don't rly have a good solution for this. some ideas tho. see
     //       comment above server's user connected emit
@@ -89,7 +108,6 @@
                 ...session,
                 connected: true
             })
-            console.log('overwrote session!')
         }
     })
 
@@ -104,24 +122,20 @@
         location.reload()
     })
 
-    socket.on('visible', session => {
-        // NOTE: we want to ignore visible changes that are broadcast from our
-        //       own additional tabs
-        // NOTE: another solution would be to somehow avoid broadcasting to our
-        //       own sockets... not sure how to do this ? would have to manually
-        //       loop over sockets and emit individually ? or create a room called
-        //       not-session-X for each session and have everyone else join that
-        //       kind of yucky, we'll go with this for now but I don't love
-        //       broadcasting messages I know we're going to ignore
-        if (session.id !== selfSession.publicID) {
-            sessions[session.id]['visible'] = session['visible']
-        }
-    })
+    // socket.on('username', session => {
+    //     if (session.id !== selfSession.publicID) {
+    //         sessions[session.id]['username'] = session['username']
+    //     }
+    // })
 
     // prettier barrier - the cost of no semicolons
-    ;['username', 'typing'].forEach(event =>
-        socket.on(event, session => {
-            sessions[session.id][event] = session[event]
+    ;['visible', 'username', 'typing'].forEach(event =>
+        socket.on(event, ({ id, [event]: value }) => {
+            const target =
+                id === selfSession.publicID ? selfSession : sessions[id]
+            target[event] = value
+            // NOTE: need this bc of svelty sveltyness
+            uglyUpdate()
         })
     )
 </script>

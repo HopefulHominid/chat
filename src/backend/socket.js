@@ -28,6 +28,8 @@ const isSessionVisible = async (id, io) => {
 }
 
 const setupListeners = (socket, io) => {
+    // TODO: not sure about the propertyListeners and customListeners
+    //       distinction anymore...
     const propertyListeners = {
         // TODO: there's the possibility that we
         //       tell everyone over and over again that we're visible, bc
@@ -40,23 +42,42 @@ const setupListeners = (socket, io) => {
             //       in the isSessionVisible function ... is this the best way ?
             socket.session.visible = value
 
-            // NOTE: this broadcasts messages to our own session's sockets. I
-            //       don't know an elegant way to avoid this. see comment on
-            //       client side visible event handler as well
-            socket.broadcast.emit('visible', {
+            // NOTE: so there's two paths we could take here. one is to avoid
+            //       broadcasting to our own sockets (currently only know how
+            //       to do this by ignoring events on client side). this way we
+            //       avoid the socket.broadcast.emit problem when you switch
+            //       from one tab to another of 1. 1st tab
+            //       emit(vis, false) 2. 2nd tab quickly handles selfSession.vis =
+            //       true -> emit(vis, true) -> broads(vis, true) (which it will not
+            //       receive) 3. 2nd tab receives broad(vis, false || false) that
+            //       1st tab triggered 4. 2nd tab is not visible. so you could fix 
+            //       this by choosing to ignore broadcasts from your own sockets
+            //       entirely, letting the selfSession.visible = visibilitystate
+            //       take over and handle each individual tab. but this has the
+            //       (unlikely ?) potential downside of "what if the user can
+            //       somehow see pages w/  visibilitystate = hidden ? those
+            //       pages would show our user as a dark not visible bubble,
+            //       even tho we may be visible on another tab. so the second
+            //       option, doing it this way, allows us to cover this case.
+            //       all of our own tabs will always be updated with the
+            //       correct value of isSessionVisible
+            io.emit('visible', {
                 visible: await isSessionVisible(socket.session.publicID, io),
                 id: socket.session.publicID
             })
         },
         // TODO: examine this whole boi
         username: value => {
-            socket.session.username = value
-            // TODO: make this so it doesn't store visible in database anymore!
-            //       we don't need to do this! (i think... review rest of code)
-            saveSocket(socket)
+            // TODO: we could also just merge in the username value, no
+            //       need to write the ids again ...
+            saveSocket({
+                privateID: socket.privateID,
+                session: {
+                    publicID: socket.session.publicID,
+                    username: value
+                }
+            })
 
-            // TODO: this emits visible change to our own session's sockets...
-            //       not right
             socket.broadcast.emit('username', {
                 username: value,
                 id: socket.session.publicID
@@ -136,7 +157,7 @@ const onConnection = async (socket, io) => {
     //       visible and tries a few more times before ignoring. or all clients have
     //       to send back msg confirming they got the new user before we let them
     //       have visible. for now, just hoping that this isn't a big problem
-    // NOTE: emit w/ acknowledgement on client side ??? look into this!!!
+    // TODO: emit w/ acknowledgement on client side ??? look into this!!!
     // NOTE: avoid sending unnecessary visible prop... we should be handling this
     //       elsewhere, and sending more data than we need here can hide bugs
     // TODO: this should never have visible in it anyway, so we probably don't need
