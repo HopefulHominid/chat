@@ -18,6 +18,7 @@
             if (e.ctrlKey || e.altKey) {
                 message += '\n'
             } else if (e.shiftKey) {
+                // TODO: why is this empty ?
             } else {
                 sendMessage()
                 e.preventDefault()
@@ -44,7 +45,12 @@
             const richMessage = {
                 timestamp: timestamp(),
                 message,
-                // why not have consumer look up username themselves ?
+                // NOTE: we send username so that if user sends 5 uninterrupted
+                //       messages, changing their username each time, we can
+                //       display their new username w/ new message each time
+                //       maybe we don't want this behavior, and instead want to
+                //       retroactively overwrite username. in that case we don't
+                //       need to send this anymore
                 session: { id: publicID, username }
             }
 
@@ -64,9 +70,6 @@
         window.scrollTo(0, document.body.scrollHeight)
     }
 
-    // NOTE: don't like this... or should i like it? socket is part of the
-    //       context after all... we're basically making socket global in
-    //       a subtree... idk man
     socket.on('chat message', addMessage)
 </script>
 

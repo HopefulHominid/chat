@@ -12,6 +12,8 @@
     // TODO: stores might solve this
     const uglyUpdate = () => (allConnectedSessions = allConnectedSessions)
 
+    // TODO: this feels kinda hairy, setting this context and importing it
+    //       everywhere in all our subcomponents... think more about this
     setContext('global', {
         getSocket: () => socket,
         getSession: () => selfSession,

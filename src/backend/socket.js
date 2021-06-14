@@ -44,14 +44,13 @@ const setupListeners = (socket, io) => {
             socket.session.visible = value
 
             socket.broadcast.emit('visible', {
-                // NOTE: if value === true, we don't even need to do this test
+                // NOTE: if value === true, we don't even need to do this check
                 visible:
                     value ||
                     (await isSessionVisible(socket.session.publicID, io)),
                 id: socket.session.publicID
             })
         },
-        // TODO: examine this whole boi
         username: value => {
             // TODO: we could also just merge in the username value, no
             //       need to write the ids again ...
@@ -70,8 +69,9 @@ const setupListeners = (socket, io) => {
         }
     }
 
-    // TODO: examine all these bois besides the discon which we already fixed
     const customListeners = {
+        // TODO: this probably doesn't even work anymore... figure out how we
+        //       would integrate w/ firebase then fix
         kick: async id => {
             await sessionStore.forget(id)
             // WARN: we should be handling some of this logic
