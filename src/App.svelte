@@ -104,8 +104,6 @@
 
     socket.on('user disconnected', id => {
         sessions[id].connected = false
-        // TODO: do we need this anymore ?
-        uglyUpdate()
     })
 
     socket.on('kill yourself', () => {
