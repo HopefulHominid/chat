@@ -23,7 +23,7 @@
     <li>{username}:</li>
 {/if}
 
-<li title={timestamp}>
+<li title={timestamp.human}>
     {#if url}
         <Link {url} />
     {:else}

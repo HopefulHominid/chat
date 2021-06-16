@@ -15,4 +15,9 @@ const sessionStore = {
     // }
 }
 
-export { sessionStore }
+const messageStore = {
+    saveMessage: async message => {},
+    allMessages: async publicID => {}
+}
+
+export { sessionStore, messageStore }

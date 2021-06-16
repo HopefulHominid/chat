@@ -1,13 +1,6 @@
-import { sessionStore } from './sessionStore.js'
+import { sessionStore, messageStore } from './sessionStore.js'
 import { Server } from 'socket.io'
 import cuid from 'cuid'
-
-// WARN: kinda weird signature... maybe just make it two-place for better
-//       readability
-// TODO: yeah, do this
-const saveSocket = async ({ privateID, session }) => {
-    await sessionStore.saveSession(privateID, session)
-}
 
 // NOTE: now we have to remember to await this bc it uses an async method! GROSS!
 const isSessionVisible = async (id, io) => {
@@ -40,7 +33,8 @@ const setupListeners = (socket, io) => {
             io.in(id).emit('kill yourself')
             socket.broadcast.emit('user disconnected', id)
         },
-        'chat message': message => {
+        'chat message': async message => {
+            await messageStore.saveMessage(message)
             socket.broadcast.emit('chat message', message)
         },
         typing: typing => {
@@ -90,9 +84,8 @@ const setupListeners = (socket, io) => {
             })
         },
         username: async value => {
-            await saveSocket({
-                privateID: socket.privateID,
-                session: { username: value }
+            await sessionStore.saveSession(socket.privateID, {
+                username: value
             })
 
             socket.broadcast.emit('username', {
@@ -168,7 +161,8 @@ const onConnection = async (socket, io) => {
                 }))
         ),
         // TODO: this shouldn't have visible in it... make sure of that later
-        session: socket.session
+        session: socket.session,
+        messages: await messageStore.allMessages()
     })
 }
 
@@ -215,7 +209,7 @@ const setupSession = async (socket, next) => {
     // TODO: there should be some code that makes SURE our supposedly non-colliding ids
     //       don't actually collide, which forces this function to start over if they do
     //       what's the point of fancy cuid library if I'm just checking ids anyway ?
-    await saveSocket(socket)
+    await sessionStore.saveSession(socket.privateID, socket.session)
 
     next()
 }
