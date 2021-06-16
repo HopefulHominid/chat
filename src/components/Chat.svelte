@@ -1,14 +1,14 @@
 <script>
     import { getContext, tick } from 'svelte'
     import MessageList from './MessageList.svelte'
-    import { timestamp } from '../scripts/utils.js'
+
+    export let messages
 
     const { getSession, getSocket, uglyUpdate } = getContext('global')
     const socket = getSocket()
     const session = getSession()
 
     let message = 'your message here'
-    let messages = []
     let typingEndDelay = 2 * 1e3
     let typingHook
     let typing = false
@@ -50,7 +50,7 @@
             const { publicID, username } = session
 
             const richMessage = {
-                timestamp: timestamp(),
+                timestamp: Date.now(),
                 message,
                 // NOTE: we send username so that if user sends 5 uninterrupted
                 //       messages, changing their username each time, we can

@@ -144,7 +144,7 @@ const onConnection = async (socket, io) => {
         // NOTE: update on who has already joined the party
         sessions: await Promise.all(
             (
-                await sessionStore.findAllSessions()
+                await sessionStore.allSessions()
             )
                 .filter(({ publicID }) => publicID !== socket.session.publicID)
                 .map(async session => ({
@@ -162,7 +162,12 @@ const onConnection = async (socket, io) => {
         ),
         // TODO: this shouldn't have visible in it... make sure of that later
         session: socket.session,
-        messages: await messageStore.allMessages()
+        // TODO: not even sure we need to be sorting here, at least for the prod
+        //       database (and we could modify our dev if prod turns out not to
+        //       need it). assuage my fears future me
+        messages: (await messageStore.allMessages()).sort(
+            (a, b) => a.timestamp - b.timestamp
+        )
     })
 }
 
@@ -195,7 +200,7 @@ const setupSession = async (socket, next) => {
     //       yea i think we need this in order to do our cross-socket visibility check
     // WARN: also idk about the philosophical decision to not store privateID as part
     //       of the session, but some extra, floating value. kind of confusing. e.g.,
-    //       findAllSessions doesn't return the privateID for anyone... is that wut
+    //       allSessions doesn't return the privateID for anyone... is that wut
     //       we want ?
     socket.privateID = cuid()
     socket.session = {

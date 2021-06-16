@@ -71,7 +71,10 @@
     const saveSession = ({ publicID, ...session }) =>
         (sessions[publicID] = session)
 
-    socket.on('init', ({ privateID, sessions, session }) => {
+    // TODO: svelte question: do we need this default ? what about in Chat ?
+    let messages = []
+
+    socket.on('init', ({ privateID, sessions, session, messages: mail }) => {
         // TODO: kinda redundant... maybe. leave comment justifying later
         //       y do we do this. check the tut maybe
         //       // attach the session ID to the next reconnection attempts
@@ -86,6 +89,10 @@
         //       and we don't know if the tab is visible or hidden (e.g.,
         //       opened via pinned tab in background or Ctrl click link)
         updateVisible()
+
+        console.log('youve got mail', mail)
+
+        messages = mail
     })
 
     // WARN: if this function mysteriously (e.g., wait()) takes 100 years to
@@ -146,7 +153,7 @@
     }}
 >
     <Settings />
-    <Chat />
+    <Chat {messages} />
     <UsernameInput username={selfSession.username} />
     <SessionList list={allConnectedSessions} />
     <!-- <Game /> -->

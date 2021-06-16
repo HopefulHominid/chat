@@ -4,6 +4,12 @@
     export let message
     export let showUsername
 
+    const formatter = new Intl.DateTimeFormat('en', {
+        dateStyle: 'long',
+        timeStyle: 'medium',
+        calendar: 'japanese'
+    })
+
     const {
         timestamp,
         message: text,
@@ -23,7 +29,7 @@
     <li>{username}:</li>
 {/if}
 
-<li title={timestamp.human}>
+<li title={formatter.format(timestamp)}>
     {#if url}
         <Link {url} />
     {:else}
