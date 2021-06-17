@@ -41,8 +41,7 @@
 <style lang="scss">
     .username {
         display: inline-block;
-        border: 8px double black;
-        border: 3px solid black;
+        border: 3px solid var(--color);
         border-radius: 20px;
         padding: 5px;
         margin: 5px;
