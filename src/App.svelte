@@ -1,6 +1,6 @@
 <script>
     import { io } from 'socket.io-client'
-    import { setContext } from 'svelte'
+    import { setContext, tick } from 'svelte'
     import { style } from './scripts/utils.js'
     import { centerChat, textColor } from './scripts/settings.js'
     import SessionList from './components/SessionList.svelte'
@@ -74,7 +74,7 @@
     // TODO: svelte question: do we need this default ? what about in Chat ?
     let messages = []
 
-    socket.on('init', ({ privateID, sessions, session, messages: mail }) => {
+    socket.on('init', async ({ privateID, sessions, session, messages: mail }) => {
         // TODO: kinda redundant... maybe. leave comment justifying later
         //       y do we do this. check the tut maybe
         //       // attach the session ID to the next reconnection attempts
@@ -93,6 +93,8 @@
         console.log('youve got mail', mail)
 
         messages = mail
+        await tick()
+        window.scrollTo(0, document.body.scrollHeight)
     })
 
     // WARN: if this function mysteriously (e.g., wait()) takes 100 years to
