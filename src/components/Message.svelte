@@ -1,5 +1,6 @@
 <script>
     import Link from './Link.svelte'
+    import { centerChat } from '../scripts/settings.js'
 
     export let message
     export let showUsername
@@ -29,7 +30,7 @@
     <li class="username">{username}</li>
 {/if}
 
-<li class="message" title={formatter.format(timestamp)}>
+<li class:message={!$centerChat} title={formatter.format(timestamp)}>
     {#if url}
         <Link {url} />
     {:else}
@@ -56,5 +57,6 @@
 
     li {
         font-family: monospace;
+        list-style: none;
     }
 </style>

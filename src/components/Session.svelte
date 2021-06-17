@@ -30,4 +30,8 @@
     button {
         font-size: 30px;
     }
+
+    li {
+        list-style: none;
+    }
 </style>
