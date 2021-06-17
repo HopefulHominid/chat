@@ -7,7 +7,7 @@
 
     let visible = false
 
-    $: document.body.style.backgroundColor = $backgroundColor
+    $: document.body.style.setProperty('--bgColor', $backgroundColor)
 </script>
 
 <button on:click={() => (visible = !visible)}>Settings</button>

@@ -166,7 +166,7 @@
     main {
         width: 100%;
         font-size: 30px;
-
+        
         color: var(--color);
         text-align: var(--text-align);
     }

@@ -30,7 +30,7 @@
 </script>
 
 {#if !doneSpinner}
-    <pre>{dots}</pre>
+    {dots}
 {:else}
-    <pre><a href={url}>{title || url}</a></pre>
+    <a href={url}>{title || url}</a>
 {/if}

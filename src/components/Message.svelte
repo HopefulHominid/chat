@@ -26,13 +26,35 @@
 </script>
 
 {#if showUsername}
-    <li>{username}:</li>
+    <li class="username">{username}</li>
 {/if}
 
-<li title={formatter.format(timestamp)}>
+<li class="message" title={formatter.format(timestamp)}>
     {#if url}
         <Link {url} />
     {:else}
-        <pre>{text}</pre>
+        {text}
     {/if}
 </li>
+
+<style lang="scss">
+    .username {
+        display: inline-block;
+        border: 8px double black;
+        border: 3px solid black;
+        border-radius: 20px;
+        padding: 5px;
+        margin: 5px;
+    }
+
+    .message {
+        // box-shadow: 0 0 26px 11px black;
+        width: fit-content;
+        padding-left: 5px;
+        // background-color: var(--bgColor);
+    }
+
+    li {
+        font-family: monospace;
+    }
+</style>
