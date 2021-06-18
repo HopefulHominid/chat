@@ -74,28 +74,29 @@
     // TODO: svelte question: do we need this default ? what about in Chat ?
     let messages = []
 
-    socket.on('init', async ({ privateID, sessions, session, messages: mail }) => {
-        // TODO: kinda redundant... maybe. leave comment justifying later
-        //       y do we do this. check the tut maybe
-        //       // attach the session ID to the next reconnection attempts
-        //       was his comment.... ponder this for a while
-        socket.auth = { privateID }
-        localStorage.setItem('privateID', privateID)
+    socket.on(
+        'init',
+        async ({ privateID, sessions, session, messages: mail }) => {
+            // TODO: kinda redundant... maybe. leave comment justifying later
+            //       y do we do this. check the tut maybe
+            //       // attach the session ID to the next reconnection attempts
+            //       was his comment.... ponder this for a while
+            socket.auth = { privateID }
+            localStorage.setItem('privateID', privateID)
 
-        Object.assign(selfSession, { ...session, connected: true })
-        sessions.forEach(saveSession)
+            Object.assign(selfSession, { ...session, connected: true })
+            sessions.forEach(saveSession)
 
-        // NOTE: need this bc visibilitychange doesn't fire on initial page load
-        //       and we don't know if the tab is visible or hidden (e.g.,
-        //       opened via pinned tab in background or Ctrl click link)
-        updateVisible()
+            // NOTE: need this bc visibilitychange doesn't fire on initial page load
+            //       and we don't know if the tab is visible or hidden (e.g.,
+            //       opened via pinned tab in background or Ctrl click link)
+            updateVisible()
 
-        console.log('youve got mail', mail)
-
-        messages = mail
-        await tick()
-        window.scrollTo(0, document.body.scrollHeight)
-    })
+            messages = mail
+            await tick()
+            window.scrollTo(0, document.body.scrollHeight)
+        }
+    )
 
     // WARN: if this function mysteriously (e.g., wait()) takes 100 years to
     //       execute... possible that we miss the first visibility update
@@ -154,10 +155,10 @@
         '--color': $textColor
     }}
 >
-    <Settings />
     <Chat {messages} />
     <UsernameInput username={selfSession.username} />
     <SessionList list={allConnectedSessions} />
+    <Settings />
     <!-- <Game /> -->
 </main>
 
@@ -168,7 +169,7 @@
     main {
         width: 100%;
         font-size: 30px;
-        
+
         color: var(--color);
         text-align: var(--text-align);
     }

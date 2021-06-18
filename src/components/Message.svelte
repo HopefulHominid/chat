@@ -30,7 +30,7 @@
     <li class="username">{username}</li>
 {/if}
 
-<li class:message={!$centerChat} title={formatter.format(timestamp)}>
+<li class:leftMessage={!$centerChat} title={formatter.format(timestamp)}>
     {#if url}
         <Link {url} />
     {:else}
@@ -47,7 +47,7 @@
         margin: 5px;
     }
 
-    .message {
+    .leftMessage {
         // box-shadow: 0 0 26px 11px black;
         width: fit-content;
         padding-left: 5px;
