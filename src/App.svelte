@@ -35,6 +35,9 @@
     //       selfSession in context, expecting to be able to keep obj
     //       reference, but our init function was reassigning the obj!
     //       so we fixed using const and Object.assign! cool!
+    // TODO: still not really sure why we make this distinction of self
+    //       I guess we need SOME variable to track ourself (do we ?) so
+    //       might as well be this... or some kind of ID ?
     const selfSession = {}
     const sessions = {}
     // WARN: a hairy little factory... needed to combine weirdly structured

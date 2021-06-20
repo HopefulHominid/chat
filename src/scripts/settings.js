@@ -9,7 +9,10 @@ const getLocalStorage = key => {
     return (check !== null) ? JSON.parse(check) : null
 }
 
+// TODO: I feel like there's some code available here that will clean up
+//       these 'localStorage' stores
 export const centerChat = writable(getLocalStorage('centerChat') || false)
+export const hideOfflineUsers = writable(getLocalStorage('hideOfflineUsers') || false)
 export const showKickButton = writable(false)
 // NOTE: do we need this since it's a string anyway?
 //       technically we dont but why have this one inconsistency that we have to
@@ -24,6 +27,9 @@ export const textColor = derived(backgroundColor, $backgroundColor =>
 
 centerChat.subscribe(val =>
     localStorage.setItem('centerChat', JSON.stringify(val))
+)
+hideOfflineUsers.subscribe(val =>
+    localStorage.setItem('hideOfflineUsers', JSON.stringify(val))
 )
 backgroundColor.subscribe(val =>
     localStorage.setItem('backgroundColor', JSON.stringify(val))

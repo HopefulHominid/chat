@@ -1,8 +1,9 @@
 <script>
     import {
+        backgroundColor,
         centerChat,
-        showKickButton,
-        backgroundColor
+        hideOfflineUsers,
+        showKickButton
     } from '../scripts/settings.js'
 
     let visible = false
@@ -15,6 +16,12 @@
 {#if visible}
     <label for="showKickButton">Kick Button</label>
     <input id="showKickButton" type="checkbox" bind:checked={$showKickButton} />
+    <label for="hideOfflineUsers">Hide Offline Users</label>
+    <input
+        id="hideOfflineUsers"
+        type="checkbox"
+        bind:checked={$hideOfflineUsers}
+    />
     <label for="centerChat">Center Chat</label>
     <input id="centerChat" type="checkbox" bind:checked={$centerChat} />
     <label for="backgroundColor">Background Color</label>
