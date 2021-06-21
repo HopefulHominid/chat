@@ -16,15 +16,18 @@
     }
 </script>
 
-<li class:disconnected={!connected}>
-    {#if connected} {visible ? '🟢' : '⚫'} {/if}
-    {username}
-    {#if self} {'(you)'} {/if}
-    {#if $showKickButton}
-        <button on:click={() => kick(publicID)}>Kick</button>
-    {/if}
-    {typing ? '⌨️ typing...' : ''}
-</li>
+<!-- NOTE: prevents Flash of Unstyled User... svelte thing maybe -->
+{#if publicID}
+    <li class:disconnected={!connected}>
+        {#if connected} {visible ? '🟢' : '⚫'} {/if}
+        {username}
+        {#if self} {'(you)'} {/if}
+        {#if $showKickButton}
+            <button on:click={() => kick(publicID)}>Kick</button>
+        {/if}
+        {typing ? '⌨️ typing...' : ''}
+    </li>
+{/if}
 
 <style lang="scss">
     button {
