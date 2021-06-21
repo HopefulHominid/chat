@@ -2,7 +2,11 @@
     import { io } from 'socket.io-client'
     import { setContext, tick } from 'svelte'
     import { style } from './scripts/utils.js'
-    import { centerChat, textColor } from './scripts/settings.js'
+    import {
+        centerChat,
+        textColor,
+        hideOfflineUsers
+    } from './scripts/settings.js'
     import SessionList from './components/SessionList.svelte'
     import UsernameInput from './components/UsernameInput.svelte'
     import Chat from './components/Chat.svelte'
@@ -10,7 +14,7 @@
     import Settings from './components/Settings.svelte'
 
     // TODO: stores might solve this
-    const uglyUpdate = () => (allConnectedSessions = allConnectedSessions)
+    const uglyUpdate = () => (allSessions = allSessions)
 
     // TODO: this feels kinda hairy, setting this context and importing it
     //       everywhere in all our subcomponents... think more about this
@@ -44,13 +48,16 @@
     //       data... find a way to store more consistently ?
     // TODO: check on how much this is updating.... make sure svelte updates
     //       aren't going haywire in the background
-    $: allConnectedSessions = [
+    $: allSessions = [
         selfSession,
-        ...Object.entries(sessions).map(([publicID, session]) => ({
-            publicID,
-            ...session
-        }))
-    ].filter(({ connected }) => connected)
+        ...Object.entries(sessions)
+            .map(([publicID, session]) => ({
+                publicID,
+                ...session
+            }))
+            .filter(({ connected }) => !$hideOfflineUsers || connected)
+            .sort((a, b) => Boolean(b.connected) - Boolean(a.connected))
+    ]
 
     let unread = false
     $: if (selfSession.visible) unread = false
@@ -160,7 +167,9 @@
 >
     <Chat {messages} />
     <UsernameInput username={selfSession.username} />
-    <SessionList list={allConnectedSessions} />
+    <!-- NOTE: maybe rename sessions above in code to otherSessions -->
+    <!--       so that we can do the shortcust {sessions} here -->
+    <SessionList sessions={allSessions} />
     <Settings />
     <!-- <Game /> -->
 </main>

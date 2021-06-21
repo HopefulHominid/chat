@@ -12,7 +12,7 @@ const getLocalStorage = key => {
 // TODO: I feel like there's some code available here that will clean up
 //       these 'localStorage' stores
 export const centerChat = writable(getLocalStorage('centerChat') || false)
-export const hideOfflineUsers = writable(getLocalStorage('hideOfflineUsers') || false)
+export const hideOfflineUsers = writable(getLocalStorage('hideOfflineUsers') || true)
 export const showKickButton = writable(false)
 // NOTE: do we need this since it's a string anyway?
 //       technically we dont but why have this one inconsistency that we have to

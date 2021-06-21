@@ -7,7 +7,7 @@
     const { getSession, getSocket } = getContext('global')
     const socket = getSocket()
 
-    let { publicID, typing, username, visible } = session
+    let { publicID, typing, username, visible, connected } = session
 
     const self = publicID === getSession().publicID
 
@@ -16,8 +16,8 @@
     }
 </script>
 
-<li>
-    {visible ? '🟢' : '⚫'}
+<li class:disconnected={!connected}>
+    {#if connected} {visible ? '🟢' : '⚫'} {/if}
     {username}
     {#if self} {'(you)'} {/if}
     {#if $showKickButton}
@@ -33,5 +33,9 @@
 
     li {
         list-style: none;
+    }
+
+    .disconnected {
+        text-decoration: line-through;
     }
 </style>

@@ -1,12 +1,13 @@
+<!-- TODO: maybe just get rid of this component ? -->
 <script>
     import Session from './Session.svelte'
 
-    export let list
+    export let sessions
 </script>
 
 <ul>
-    <!-- WARN: is the (list) key here necessary ? -->
-    {#each list as session (list)}
+    <!-- WARN: is the (sessions) key here necessary ? -->
+    {#each sessions as session (sessions)}
         <Session {session} />
     {/each}
 </ul>
