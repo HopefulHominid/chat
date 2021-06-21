@@ -14,7 +14,7 @@
     import Settings from './components/Settings.svelte'
 
     // TODO: stores might solve this
-    const uglyUpdate = () => (allSessions = allSessions)
+    const uglyUpdate = () => (sessions = sessions)
 
     // TODO: this feels kinda hairy, setting this context and importing it
     //       everywhere in all our subcomponents... think more about this
@@ -43,14 +43,14 @@
     //       I guess we need SOME variable to track ourself (do we ?) so
     //       might as well be this... or some kind of ID ?
     const selfSession = {}
-    const sessions = {}
+    const otherSessions = {}
     // WARN: a hairy little factory... needed to combine weirdly structured
     //       data... find a way to store more consistently ?
     // TODO: check on how much this is updating.... make sure svelte updates
     //       aren't going haywire in the background
-    $: allSessions = [
+    $: sessions = [
         selfSession,
-        ...Object.entries(sessions)
+        ...Object.entries(otherSessions)
             .map(([publicID, session]) => ({
                 publicID,
                 ...session
@@ -79,14 +79,14 @@
     document.addEventListener('visibilitychange', updateVisible)
 
     const saveSession = ({ publicID, ...session }) =>
-        (sessions[publicID] = session)
+        (otherSessions[publicID] = session)
 
     // TODO: svelte question: do we need this default ? what about in Chat ?
     let messages = []
 
     socket.on(
         'init',
-        async ({ privateID, sessions, session, messages: mail }) => {
+        async ({ privateID, otherSessions, session, messages: mail }) => {
             // TODO: kinda redundant... maybe. leave comment justifying later
             //       y do we do this. check the tut maybe
             //       // attach the session ID to the next reconnection attempts
@@ -95,7 +95,7 @@
             localStorage.setItem('privateID', privateID)
 
             Object.assign(selfSession, { ...session, connected: true })
-            sessions.forEach(saveSession)
+            otherSessions.forEach(saveSession)
 
             // NOTE: need this bc visibilitychange doesn't fire on initial page load
             //       and we don't know if the tab is visible or hidden (e.g.,
@@ -123,7 +123,7 @@
     })
 
     socket.on('user disconnected', id => {
-        sessions[id].connected = false
+        otherSessions[id].connected = false
     })
 
     socket.on('kill yourself', () => {
@@ -135,7 +135,7 @@
     ;['visible', 'username', 'typing'].forEach(event =>
         socket.on(event, ({ id, [event]: value }) => {
             const target =
-                id === selfSession.publicID ? selfSession : sessions[id]
+                id === selfSession.publicID ? selfSession : otherSessions[id]
             // NOTE: ignore the visibility=false update that comes from going
             //       from one in-session-chat-tab to another while the browser
             //       is in a limbo in-between-tabs state, given we know based
@@ -167,9 +167,7 @@
 >
     <Chat {messages} />
     <UsernameInput username={selfSession.username} />
-    <!-- NOTE: maybe rename sessions above in code to otherSessions -->
-    <!--       so that we can do the shortcust {sessions} here -->
-    <SessionList sessions={allSessions} />
+    <SessionList {sessions} />
     <Settings />
     <!-- <Game /> -->
 </main>

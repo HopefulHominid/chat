@@ -142,7 +142,7 @@ const onConnection = async (socket, io) => {
         privateID: socket.privateID,
         // TODO: this feels so disgusting...
         // NOTE: update on who has already joined the party
-        sessions: await Promise.all(
+        otherSessions: await Promise.all(
             (
                 await sessionStore.allSessions()
             )
