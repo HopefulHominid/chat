@@ -5,6 +5,7 @@ import {
     addDoc,
     collection,
     doc,
+    deleteDoc,
     getFirestore,
     getDoc,
     getDocs,
@@ -101,8 +102,9 @@ const makeDevelopmentDatabase = () => {
                 )
             }
             return decoded
-        }
-        // delete: key => Promise.resolve(delete database[key])
+        },
+        // NOTE: right now this is hardcoded to delete from 'users' collection only
+        delete: id => delete database['users'][id]
     }
 }
 
@@ -116,7 +118,9 @@ const makeProductionDatabase = () => {
         },
         set: async ({ collection: collectionName, id, merge }) => {
             if (id) {
-                await setDoc(doc(db, collectionName, id), merge, { merge: true })
+                await setDoc(doc(db, collectionName, id), merge, {
+                    merge: true
+                })
             } else {
                 await addDoc(collection(db, collectionName), merge)
             }
@@ -126,8 +130,8 @@ const makeProductionDatabase = () => {
             const result = {}
             querySnapshot.forEach(doc => (result[doc.id] = doc.data()))
             return result
-        }
-        // delete: key => Promise.resolve(delete database[key])
+        },
+        delete: async id => await deleteDoc(doc(db, 'users', id))
     }
 
     return database

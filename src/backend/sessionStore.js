@@ -16,14 +16,14 @@ const sessionStore = {
             id: privateID,
             merge: session
         }),
-    allSessions: async () => Object.values(await database.getAll('users'))
-    // forget: async publicID => {
-    //     const all = await database.getAll()
-    //     const found = Object.entries(all).find(
-    //         ([privateID, session]) => session.publicID === publicID
-    //     )
-    //     if (found) await database.delete(found[0])
-    // }
+    allSessions: async () => Object.values(await database.getAll('users')),
+    forgetUser: async publicID => {
+        const all = await database.getAll('users')
+        const found = Object.entries(all).find(
+            ([_privateID, session]) => session.publicID === publicID
+        )
+        if (found) await database.delete(found[0])
+    }
 }
 
 const messageStore = {

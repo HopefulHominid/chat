@@ -123,10 +123,20 @@
     })
 
     socket.on('user disconnected', id => {
-        otherSessions[id].connected = false
+        // NOTE: gotta do the ? bc kicking leads to kick
+        //       yourself leads to socket.close() leads to
+        //       user disconnected event. fix more later
+        if (otherSessions[id]) otherSessions[id].connected = false
     })
 
-    socket.on('kill yourself', () => {
+    // NOTE: standardize naming convention of id vs publicID
+    socket.on('user kicked', publicID => {
+        delete otherSessions[publicID]
+        // TODO: do we need this ?
+        uglyUpdate()
+    })
+
+    socket.on('kick yourself', () => {
         socket.close()
         location.reload()
     })

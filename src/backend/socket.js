@@ -24,14 +24,14 @@ const setupListeners = (socket, io) => {
     const listeners = {
         // TODO: this probably doesn't even work anymore... figure out how we
         //       would integrate w/ firebase then fix
-        kick: async id => {
-            await sessionStore.forget(id)
+        kick: async publicID => {
+            await sessionStore.forgetUser(publicID)
             // WARN: we should be handling some of this logic
             //       on the kick sender's side ?
             // WARN: shouldn't we be using .to here ? so we don't need
             //       rooms... see the cheat sheet and think more about this
-            io.in(id).emit('kill yourself')
-            socket.broadcast.emit('user disconnected', id)
+            io.in(publicID).emit('kick yourself')
+            io.emit('user kicked', publicID)
         },
         'chat message': async message => {
             await messageStore.saveMessage(message)
