@@ -15,13 +15,13 @@ import {
 const initFirebase = () => {
     // do we need to store the return value? cross that bridge?
     initializeApp({
-        apiKey: 'AIzaSyAG6IrkVYiyaavJx7IV0vxiCRL9Roo8OBY',
-        authDomain: 'racket-6c4d3.firebaseapp.com',
-        projectId: 'racket-6c4d3',
-        storageBucket: 'racket-6c4d3.appspot.com',
-        messagingSenderId: '336816823853',
-        appId: '1:336816823853:web:c96c0c90fa35d2311e22a4'
-    })
+        apiKey: "AIzaSyCEmMP-Zxtv99o1_NIZ_FtOK6DPaEN5bpM",
+        authDomain: "racket-a4f35.firebaseapp.com",
+        projectId: "racket-a4f35",
+        storageBucket: "racket-a4f35.appspot.com",
+        messagingSenderId: "856702305510",
+        appId: "1:856702305510:web:a3ee718ec83c62f9872727"
+      })
 
     return getFirestore()
 }
