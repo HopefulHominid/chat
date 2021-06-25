@@ -8,7 +8,7 @@
     const socket = getSocket()
     const session = getSession()
 
-    let message = 'your message here'
+    let message = ''
     let typingEndDelay = 2 * 1e3
     let typingHook
     let typing = false
@@ -84,6 +84,7 @@
 <textarea
     autocomplete="off"
     spellcheck="false"
+    placeholder="your message here"
     bind:value={message}
     on:keydown={messageKeydown}
     on:input={typingStart}
